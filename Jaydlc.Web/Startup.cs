@@ -8,9 +8,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Jaydlc.Core;
+using MatBlazor;
 
 namespace Jaydlc.Web
 {
@@ -32,8 +34,13 @@ namespace Jaydlc.Web
             services.AddMatBlazor();
             
             services.AddSingleton<WeatherForecastService>();
-            services.AddSingleton(_ =>
-                new VideoManager("/tmp", "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-"));
+            services.AddSingleton(sp =>
+            {
+                var env = sp.GetRequiredService<IWebHostEnvironment>();
+
+                return new VideoManager(Path.Join(env.WebRootPath, "JsonFiles"),
+                    "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-");
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

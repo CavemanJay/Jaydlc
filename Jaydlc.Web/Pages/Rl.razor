@@ -1,13 +1,27 @@
 ﻿@page "/Rl/{videoId?}"
-@using System.IO
 @using Jaydlc.Core
-@inject IVideoManager VideoManager
+@inject VideoManager VideoManager
 
 <h3>Jay's Rocket League Clips</h3>
 
 @if (VideoId is null)
 {
-    // Show the available videos
+    @foreach (var video in VideoManager.GetVideos())
+    {
+        <MatCard Class="col-4 my-2">
+            <MatCardContent>
+                @* <MatCardMedia Wide="true" ImageUrl="@(video.Thumbnails.First(x => x.IsJpeg).url)"></MatCardMedia> *@
+                <div style="padding: 1rem">
+                    <MatHeadline6>@video.Title</MatHeadline6>
+                    <MatSubtitle2>@video.ParsedUploadDate.ToShortDateString()</MatSubtitle2>
+                </div>
+
+                <MatBody2>
+                    @video.Description
+                </MatBody2>
+            </MatCardContent>
+        </MatCard>
+    }
 }
 else
 {
@@ -28,7 +42,7 @@ else
 
     private async Task UpdateVideos()
     {
-        await VideoManager.DownloadPlaylistInfo();
+        await VideoManager.DownloadPlaylistInfo(Console.WriteLine);
     }
 
 }
