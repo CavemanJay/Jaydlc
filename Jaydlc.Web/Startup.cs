@@ -29,6 +29,8 @@ namespace Jaydlc.Web
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
+            services.AddMatBlazor();
+            
             services.AddSingleton<WeatherForecastService>();
             services.AddSingleton(_ =>
                 new VideoManager("/tmp", "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-"));
