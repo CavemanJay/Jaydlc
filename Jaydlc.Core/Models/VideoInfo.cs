@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Jaydlc.Core.Models
@@ -14,7 +15,9 @@ namespace Jaydlc.Core.Models
         [JsonPropertyName("thumbnails")]
         public List<Thumbnail> Thumbnails { get; init; }
 
-        // public List<Format> formats { get; init; }
+        [JsonPropertyName("formats")]
+        public List<Format> Formats { get; init; }
+
         [JsonPropertyName("description")]
         public string Description { get; init; }
 
@@ -92,5 +95,8 @@ namespace Jaydlc.Core.Models
 
         [JsonPropertyName("_filename")]
         public string FileName { get; init; }
+
+        public DateTime ParsedUploadDate => new DateTime(int.Parse(UploadDate.Substring(0, 4)),
+            int.Parse(UploadDate.Substring(4, 2)), int.Parse(UploadDate.Substring(6, 2)));
     }
 }
