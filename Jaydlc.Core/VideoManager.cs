@@ -9,18 +9,20 @@ namespace Jaydlc.Core
     public class VideoManager : IVideoManager
     {
         public string RootFolder { get; init; }
+        public string PlaylistId { get; }
 
         public IEnumerable<VideoInfo>? GetVideos()
         {
             throw new NotImplementedException();
         }
 
-        public async Task<Exception?> DownloadPlaylistInfo(string playlistId)
+        public async Task<Exception?> DownloadPlaylistInfo()
         {
             try
             {
                 await Process.Start("youtube-dl",
-                    new[] {"--write-info-json", "--skip-download", playlistId}).WaitForExitAsync();
+                        new[] {"--write-info-json", "--skip-download", this.PlaylistId})
+                    .WaitForExitAsync();
             }
             catch (Exception ex)
             {

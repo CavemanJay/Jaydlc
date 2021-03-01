@@ -30,7 +30,8 @@ namespace Jaydlc.Web
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddSingleton<WeatherForecastService>();
-            services.AddSingleton<IVideoManager, VideoManager>();
+            services.AddSingleton<IVideoManager>(_ =>
+                new VideoManager("PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -28,7 +28,11 @@ else
 
     private async Task UpdateVideos()
     {
-        await VideoManager.DownloadPlaylistInfo("PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-");
+        var error = await VideoManager.DownloadPlaylistInfo();
+        if (error is not null)
+        {
+            Console.WriteLine(error.Message);
+        }
     }
 
 }

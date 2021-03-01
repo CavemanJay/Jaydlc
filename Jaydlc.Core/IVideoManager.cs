@@ -8,8 +8,9 @@ namespace Jaydlc.Core
     public interface IVideoManager
     {
         public string RootFolder { get; }
+        public string PlaylistId { get; }
 
         IEnumerable<VideoInfo>? GetVideos();
-        Task<Exception?> DownloadPlaylistInfo(string playlistId);
+        Task<Exception?> DownloadPlaylistInfo();
     }
 }
