@@ -1,17 +1,11 @@
 using Jaydlc.Web.Data;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Jaydlc.Core;
+using Jaydlc.Web.GraphQL;
 using MatBlazor;
 
 namespace Jaydlc.Web
@@ -32,15 +26,13 @@ namespace Jaydlc.Web
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddMatBlazor();
-            
+
+            services.AddGraphQLServer().AddQueryType<Query>();
+
             services.AddSingleton<WeatherForecastService>();
             services.AddSingleton(sp =>
-            {
-                var env = sp.GetRequiredService<IWebHostEnvironment>();
-
-                return new VideoManager(Path.Join(env.WebRootPath, "JsonFiles"),
-                    "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-");
-            });
+                new VideoManager(Configuration.GetValue<string>("VideoInfoRoot"),
+                    "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -66,6 +58,8 @@ namespace Jaydlc.Web
             {
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
+
+                endpoints.MapGraphQL();
             });
         }
     }
