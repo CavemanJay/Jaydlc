@@ -10,7 +10,7 @@
     {
         <MatCard Class="col-4 my-2">
             <MatCardContent>
-                @* <MatCardMedia Wide="true" ImageUrl="@(video.Thumbnails.First(x => x.IsJpeg).url)"></MatCardMedia> *@
+                <MatCardMedia Wide="true" ImageUrl="@video.Thumbnail"></MatCardMedia>
                 <div style="padding: 1rem">
                     <MatHeadline6>@video.Title</MatHeadline6>
                     <MatSubtitle2>@video.ParsedUploadDate.ToShortDateString()</MatSubtitle2>
@@ -25,7 +25,7 @@
 }
 else
 {
-    <LinkedVideo VideoId="@VideoId"/>
+    <LinkedVideo Video="@VideoManager.GetVideos().SingleOrDefault(x => x.Id == VideoId)"/>
 }
 
 <button class="btn btn-primary" @onclick="UpdateVideos">Update Videos</button>
