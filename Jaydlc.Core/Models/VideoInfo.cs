@@ -98,5 +98,7 @@ namespace Jaydlc.Core.Models
 
         public DateTime ParsedUploadDate => new DateTime(int.Parse(UploadDate.Substring(0, 4)),
             int.Parse(UploadDate.Substring(4, 2)), int.Parse(UploadDate.Substring(6, 2)));
+
+        public string JsonFile => $"{Title}-{Id}.info.json";
     }
 }
