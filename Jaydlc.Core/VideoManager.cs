@@ -34,14 +34,14 @@ namespace Jaydlc.Core
         /// <summary>
         /// Uses youtube-dl executable to download the information about videos in a playlist
         /// </summary>
-        /// <exception cref="Exception">Fuck</exception>
+        /// <exception cref="ExeNotFoundException">Youtube-dl executable is not found in path</exception>
         public async Task DownloadPlaylistInfo(Action<string?>? stdOutHandler = null)
         {
             try
             {
                 var process = Process.Start("youtube-dl", new[]
                 {
-                    "-o", $"{this.RootFolder}/$(title)s-%(id)s.%(ext)s", "--write-info-json",
+                    "-o", $"{this.RootFolder}/%(title)s-%(id)s.%(ext)s", "--write-info-json",
                     "--skip-download",
                     this.PlaylistId
                 });
