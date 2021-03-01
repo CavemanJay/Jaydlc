@@ -32,9 +32,10 @@ namespace Jaydlc.Core
             return null;
         }
 
-        public VideoManager(string rootFolder)
+        public VideoManager(string rootFolder, string playlistId)
         {
             this.RootFolder = rootFolder;
+            PlaylistId = playlistId;
         }
     }
 }
