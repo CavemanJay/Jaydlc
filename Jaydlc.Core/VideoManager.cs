@@ -2,27 +2,40 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Jaydlc.Core.Exceptions;
 using Jaydlc.Core.Models;
 
 namespace Jaydlc.Core
 {
-    public class VideoManager : IVideoManager
+    public class VideoManager
     {
         public string RootFolder { get; init; }
         public string PlaylistId { get; }
 
         public IEnumerable<VideoInfo>? GetVideos()
         {
-            throw new NotImplementedException();
+            foreach (var jsonFile in Directory.GetFiles(RootFolder)
+                .Where(x => x.EndsWith("info.json")))
+            {
+                if (jsonFile is null) continue;
+
+                var info = JsonSerializer.Deserialize<VideoInfo>(File.ReadAllText(jsonFile));
+
+                if (info is null) continue;
+                yield return info;
+            }
         }
 
         /// <summary>
         /// Uses youtube-dl executable to download the information about videos in a playlist
         /// </summary>
         /// <exception cref="Exception">Fuck</exception>
-        public async Task DownloadPlaylistInfo()
+        public async Task DownloadPlaylistInfo(Action<string?>? stdOutHandler = null)
         {
             try
             {
@@ -33,7 +46,10 @@ namespace Jaydlc.Core
                     this.PlaylistId
                 });
 
-                process.OutputDataReceived += (sender, args) => { Console.WriteLine(args.Data); };
+                if (stdOutHandler is not null)
+                {
+                    process.OutputDataReceived += (sender, args) => { stdOutHandler(args.Data); };
+                }
 
                 await process.WaitForExitAsync();
             }

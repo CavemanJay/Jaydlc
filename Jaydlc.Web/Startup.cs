@@ -30,7 +30,7 @@ namespace Jaydlc.Web
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddSingleton<WeatherForecastService>();
-            services.AddSingleton<IVideoManager>(_ =>
+            services.AddSingleton(_ =>
                 new VideoManager("/tmp", "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-"));
         }
 
