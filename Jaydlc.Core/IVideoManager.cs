@@ -11,6 +11,6 @@ namespace Jaydlc.Core
         public string PlaylistId { get; }
 
         IEnumerable<VideoInfo>? GetVideos();
-        Task<Exception?> DownloadPlaylistInfo();
+        Task DownloadPlaylistInfo();
     }
 }

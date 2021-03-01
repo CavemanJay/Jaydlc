@@ -23,16 +23,12 @@ else
 
     protected override void OnInitialized()
     {
-        Console.WriteLine(VideoId);
+    // Console.WriteLine(VideoId);
     }
 
     private async Task UpdateVideos()
     {
-        var error = await VideoManager.DownloadPlaylistInfo();
-        if (error is not null)
-        {
-            Console.WriteLine(error.Message);
-        }
+        await VideoManager.DownloadPlaylistInfo();
     }
 
 }

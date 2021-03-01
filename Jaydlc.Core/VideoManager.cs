@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Jaydlc.Core.Exceptions;
 using Jaydlc.Core.Models;
 
 namespace Jaydlc.Core
@@ -16,20 +18,34 @@ namespace Jaydlc.Core
             throw new NotImplementedException();
         }
 
-        public async Task<Exception?> DownloadPlaylistInfo()
+        /// <summary>
+        /// Uses youtube-dl executable to download the information about videos in a playlist
+        /// </summary>
+        /// <exception cref="Exception">Fuck</exception>
+        public async Task DownloadPlaylistInfo()
         {
             try
             {
-                await Process.Start("youtube-dl",
-                        new[] {"--write-info-json", "--skip-download", this.PlaylistId})
-                    .WaitForExitAsync();
-            }
-            catch (Exception ex)
-            {
-                return ex;
-            }
+                var process = Process.Start("youtube-dl", new[]
+                {
+                    "-o", $"{this.RootFolder}/$(title)s-%(id)s.%(ext)s", "--write-info-json",
+                    "--skip-download",
+                    this.PlaylistId
+                });
 
-            return null;
+                process.OutputDataReceived += (sender, args) => { Console.WriteLine(args.Data); };
+
+                await process.WaitForExitAsync();
+            }
+            catch (Win32Exception ex)
+            {
+                if (ex.Message.Contains("No such file"))
+                {
+                    throw new ExeNotFoundException("youtube-dl");
+                }
+
+                throw;
+            }
         }
 
         public VideoManager(string rootFolder, string playlistId)
