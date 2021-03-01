@@ -6,7 +6,7 @@ using Jaydlc.Core.Models;
 
 namespace Jaydlc.Core
 {
-    public class VideoManager //: IVideoManager
+    public class VideoManager : IVideoManager
     {
         public string RootFolder { get; init; }
 

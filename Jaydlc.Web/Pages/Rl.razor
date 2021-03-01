@@ -1,19 +1,20 @@
 ﻿@page "/Rl/{videoId?}"
 @using System.IO
+@using Jaydlc.Core
+@inject IVideoManager VideoManager
 
 <h3>Jay's Rocket League Clips</h3>
 
 @if (VideoId is null)
 {
-    foreach (var VARIABLE in Directory.GetFiles(""))
-    {
-        
-    }
+    // Show the available videos
 }
 else
 {
     <LinkedVideo VideoId="@VideoId"/>
 }
+
+<button class="btn btn-primary" @onclick="UpdateVideos">Update Videos</button>
 
 @code {
 
@@ -23,6 +24,11 @@ else
     protected override void OnInitialized()
     {
         Console.WriteLine(VideoId);
+    }
+
+    private async Task UpdateVideos()
+    {
+        await VideoManager.DownloadPlaylistInfo("PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-");
     }
 
 }

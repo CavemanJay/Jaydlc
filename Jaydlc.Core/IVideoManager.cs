@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Jaydlc.Core.Models;
 
 namespace Jaydlc.Core
@@ -9,6 +10,6 @@ namespace Jaydlc.Core
         public string RootFolder { get; }
 
         IEnumerable<VideoInfo>? GetVideos();
-        Exception? DownloadPlaylistInfo(string playlistId);
+        Task<Exception?> DownloadPlaylistInfo(string playlistId);
     }
 }
