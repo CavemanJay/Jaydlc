@@ -1,0 +1,28 @@
+﻿@page "/Rl/{videoId?}"
+@using System.IO
+
+<h3>Jay's Rocket League Clips</h3>
+
+@if (VideoId is null)
+{
+    foreach (var VARIABLE in Directory.GetFiles(""))
+    {
+        
+    }
+}
+else
+{
+    <LinkedVideo VideoId="@VideoId"/>
+}
+
+@code {
+
+    [Parameter]
+    public string? VideoId { get; set; } = null;
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine(VideoId);
+    }
+
+}
