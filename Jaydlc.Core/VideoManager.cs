@@ -1,23 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Jaydlc.Core.Exceptions;
 using Jaydlc.Core.Models;
 
 namespace Jaydlc.Core
 {
-    public class VideoManager
+    public class VideoManager : IDisposable
     {
+        private readonly FileSystemWatcher _watcher;
         public string RootFolder { get; init; }
         public string PlaylistId { get; }
 
-        public IEnumerable<VideoInfo>? GetVideos()
+        public ObservableCollection<VideoInfo> Videos { get; init; } = new();
+
+        private void initVideos()
         {
             foreach (var jsonFile in Directory.GetFiles(RootFolder)
                 .Where(x => x.EndsWith("info.json")))
@@ -27,7 +29,9 @@ namespace Jaydlc.Core
                 var info = JsonSerializer.Deserialize<VideoInfo>(File.ReadAllText(jsonFile));
 
                 if (info is null) continue;
-                yield return info;
+                if (Videos.Contains(info)) continue;
+
+                Videos.Add(info);
             }
         }
 
@@ -66,8 +70,52 @@ namespace Jaydlc.Core
 
         public VideoManager(string rootFolder, string playlistId)
         {
-            this.RootFolder = rootFolder;
+            _ = rootFolder ?? throw new ArgumentNullException(nameof(rootFolder));
+            _ = playlistId ?? throw new ArgumentNullException(nameof(playlistId));
+
+            this.RootFolder = Path.GetFullPath(rootFolder);
             PlaylistId = playlistId;
+
+            initVideos();
+
+            _watcher = new FileSystemWatcher(RootFolder);
+            _watcher.Created += VideoInfoDownloaded;
+            _watcher.Deleted += VideoInfoDeleted;
+
+            _watcher.EnableRaisingEvents = true;
+        }
+
+        private void VideoInfoDeleted(object sender, FileSystemEventArgs e)
+        {
+            var deletedVid = Videos.FirstOrDefault(x => x.JsonFile == e.Name);
+            if (deletedVid is null) return;
+
+            Videos.Remove(deletedVid);
+        }
+
+
+        private async void VideoInfoDownloaded(object sender, FileSystemEventArgs e)
+        {
+            // Wait to make sure the file is fully written
+            await Task.Delay(1000);
+            if (!e.Name.EndsWith("info.json"))
+            {
+                return;
+            }
+
+            var info =
+                JsonSerializer.Deserialize<VideoInfo>(await File.ReadAllTextAsync(e.FullPath));
+            if (info is null) return;
+            if (Videos.Contains(info)) return;
+
+            Videos.Add(info);
+        }
+
+        public void Dispose()
+        {
+            _watcher.Created -= VideoInfoDownloaded;
+            _watcher.Deleted -= VideoInfoDeleted;
+            _watcher.Dispose();
         }
     }
 }
