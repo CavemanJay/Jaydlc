@@ -54,6 +54,28 @@ namespace Jaydlc.Core
             }
         }
 
+        private void LogToFile(string root, string fileName,
+            DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            var datePrefix = DateTime.Now.ToShortDateString().Replace("/", "_").Replace(@"\", "_");
+
+            var content = dataReceivedEventArgs.Data;
+            if (content is null)
+            {
+                return;
+            }
+
+            using var outFile = new FileStream(Path.Join(root, $"{datePrefix}-{fileName}"),
+                FileMode.Append);
+
+            content = $"{DateTime.Now.ToLongTimeString()}: {content}\n";
+            if (content.Contains("Finished downloading playlist"))
+                content += "\n";
+
+            var dataToWrite = Encoding.UTF8.GetBytes(content);
+            outFile.Write(dataToWrite);
+        }
+
         /// <summary>
         /// Uses youtube-dl executable to download the information about videos in a playlist.
         /// Writes output to log files within the <see cref="logRoot"/> folder.
@@ -85,43 +107,16 @@ namespace Jaydlc.Core
                     UseShellExecute = false
                 };
 
-                var process = new Process() { StartInfo = startInfo };
+                var process = new Process {StartInfo = startInfo};
 
-                var datePrefix = DateTime.Now.ToShortDateString().Replace("/", "_").Replace(@"\", "_");
-                process.OutputDataReceived += (sender, dataReceivedEventArgs) =>
+                process.OutputDataReceived += (sender, data) =>
                 {
-                    var content = dataReceivedEventArgs.Data;
-                    if (content is null)
-                    {
-                        return;
-                    }
-
-                    using var outFile = new FileStream(Path.Join(logRoot, $"{datePrefix}-youtubedl.log"),
-                        FileMode.Append);
-
-                    content = $"{DateTime.Now.ToLongTimeString()}: {content}\n";
-                    var dataToWrite = Encoding.UTF8.GetBytes(content);
-                    outFile.Write(dataToWrite);
+                    this.LogToFile(logRoot, "youtubedl.log", data);
                 };
 
-                process.ErrorDataReceived += (sender, dataReceivedEventArgs) =>
+                process.ErrorDataReceived += (sender, data) =>
                 {
-                    var content = dataReceivedEventArgs.Data;
-                    if (content is null)
-                    {
-                        return;
-                    }
-
-                    using var errorFile = new FileStream(Path.Join(logRoot, $"{datePrefix}-error.log"),
-                        FileMode.Append);
-
-                    content = $"{DateTime.Now.ToLongTimeString()}: {content}\n";
-
-                    if (content.Contains("Finished downloading playlist"))
-                        content += "\n";
-
-                    var dataToWrite = Encoding.UTF8.GetBytes(content);
-                    errorFile.Write(dataToWrite);
+                    this.LogToFile(logRoot, "error.log", data);
                 };
 
                 process.Start();
@@ -169,9 +164,18 @@ namespace Jaydlc.Core
 
             lock (Videos)
             {
-                if (Videos.Contains(info)) return;
+                var existing = Videos.FirstOrDefault(x => x.Id == info.Id);
 
-                Videos.Add(info);
+                // Add the video to the list if it doesn't exist yet
+                if (existing is null)
+                {
+                    Videos.Add(info);
+                    return;
+                }
+
+                // Update the video if it exists already
+                var index = Videos.IndexOf(existing);
+                Videos[index] = info;
             }
         }
 
