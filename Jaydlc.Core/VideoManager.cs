@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Jaydlc.Core.Exceptions;
@@ -18,55 +19,6 @@ namespace Jaydlc.Core
         public string PlaylistId { get; }
 
         public ObservableCollection<VideoInfo> Videos { get; init; } = new();
-
-        private void initVideos()
-        {
-            foreach (var jsonFile in Directory.GetFiles(RootFolder)
-                .Where(x => x.EndsWith("info.json")))
-            {
-                if (jsonFile is null) continue;
-
-                var info = JsonSerializer.Deserialize<VideoInfo>(File.ReadAllText(jsonFile));
-
-                if (info is null) continue;
-                if (Videos.Contains(info)) continue;
-
-                Videos.Add(info);
-            }
-        }
-
-        /// <summary>
-        /// Uses youtube-dl executable to download the information about videos in a playlist
-        /// </summary>
-        /// <exception cref="ExeNotFoundException">Youtube-dl executable is not found in path</exception>
-        public async Task DownloadPlaylistInfo(Action<string?>? stdOutHandler = null)
-        {
-            try
-            {
-                var process = Process.Start("youtube-dl", new[]
-                {
-                    "-o", $"{this.RootFolder}/%(title)s-%(id)s.%(ext)s", "--write-info-json",
-                    "--skip-download",
-                    this.PlaylistId
-                });
-
-                if (stdOutHandler is not null)
-                {
-                    process.OutputDataReceived += (sender, args) => { stdOutHandler(args.Data); };
-                }
-
-                await process.WaitForExitAsync();
-            }
-            catch (Win32Exception ex)
-            {
-                if (ex.Message.Contains("No such file"))
-                {
-                    throw new ExeNotFoundException("youtube-dl");
-                }
-
-                throw;
-            }
-        }
 
         public VideoManager(string rootFolder, string playlistId)
         {
@@ -85,6 +37,101 @@ namespace Jaydlc.Core
 
             _watcher.EnableRaisingEvents = true;
         }
+
+        private void initVideos()
+        {
+            foreach (var jsonFile in Directory.GetFiles(RootFolder)
+                .Where(x => x.EndsWith("info.json")))
+            {
+                if (jsonFile is null) continue;
+
+                var info = JsonSerializer.Deserialize<VideoInfo>(File.ReadAllText(jsonFile));
+
+                if (info is null) continue;
+                if (Videos.Contains(info)) continue;
+
+                Videos.Add(info);
+            }
+        }
+
+        /// <summary>
+        /// Uses youtube-dl executable to download the information about videos in a playlist.
+        /// Writes output to error.log and youtubedl.log in the <see cref="logRoot"/>.
+        /// </summary>
+        /// <param name="logRoot">The root folder to place youtube-dl output</param>
+        /// <exception cref="ExeNotFoundException">Youtube-dl executable is not found in path</exception>
+        public async Task DownloadPlaylistInfo(string logRoot)
+        {
+            _ = logRoot ?? throw new ArgumentNullException(nameof(logRoot));
+
+            // Create the folder if it does not exist 
+            _ = Directory.Exists(logRoot) ? null : Directory.CreateDirectory(logRoot);
+
+            var outString = "'" + Path.Join(this.RootFolder, "%(title)s-%(id)s.%(ext)s") + "'";
+            var ytdlArgs = new[]
+            {
+                "-o", outString, "--write-info-json",
+                "--skip-download",
+                this.PlaylistId
+            };
+
+            try
+            {
+                var startInfo = new ProcessStartInfo("youtube-dl")
+                {
+                    Arguments = string.Join(' ', ytdlArgs),
+                    RedirectStandardOutput = false,
+                    RedirectStandardError = false
+                };
+
+                var process = new Process() {StartInfo = startInfo};
+
+                process.OutputDataReceived += (sender, dataReceivedEventArgs) =>
+                {
+                    var content = dataReceivedEventArgs.Data;
+                    if (content is null)
+                    {
+                        return;
+                    }
+
+                    using var outFile = new FileStream(Path.Join(logRoot, "youtubedl.log"),
+                        FileMode.Append, FileAccess.ReadWrite);
+
+                    content = $"{DateTime.Now.ToLongTimeString()}: {content}";
+                    var dataToWrite = Encoding.UTF8.GetBytes(content);
+                    outFile.Write(dataToWrite);
+                };
+
+                process.ErrorDataReceived += (sender, dataReceivedEventArgs) =>
+                {
+                    var content = dataReceivedEventArgs.Data;
+                    if (content is null)
+                    {
+                        return;
+                    }
+
+                    using var errorFile = new FileStream(Path.Join(logRoot, "error.log"),
+                        FileMode.Append, FileAccess.ReadWrite);
+
+                    content = $"{DateTime.Now.ToLongTimeString()}: {content}";
+                    var dataToWrite = Encoding.UTF8.GetBytes(content);
+                    errorFile.Write(dataToWrite);
+                };
+
+                process.Start();
+                await process.WaitForExitAsync();
+            }
+            catch (Win32Exception ex)
+            {
+                if (ex.Message.Contains("No such file"))
+                {
+                    throw new ExeNotFoundException("youtube-dl");
+                }
+
+                throw;
+            }
+        }
+
 
         private void VideoInfoDeleted(object sender, FileSystemEventArgs e)
         {

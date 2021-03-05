@@ -3,7 +3,7 @@
 @using System.Collections.Specialized
 @using Microsoft.Extensions.Logging
 @inject VideoManager VideoManager
-@inject ILogger Logger
+@inject ILogger<Rl> Logger
 
 @* <h3>Jay's Rocket League Clips</h3> *@
 <Title Value="Jay's RL Clips"/>
@@ -54,7 +54,7 @@ else
 
     private async Task UpdateVideos()
     {
-        await VideoManager.DownloadPlaylistInfo(data => Logger.LogInformation(data));
+        await VideoManager.DownloadPlaylistInfo("/tmp/youtubedl");
     }
 
 }
