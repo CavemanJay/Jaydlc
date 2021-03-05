@@ -56,7 +56,7 @@ namespace Jaydlc.Core
 
         /// <summary>
         /// Uses youtube-dl executable to download the information about videos in a playlist.
-        /// Writes output to error.log and youtubedl.log in the <see cref="logRoot"/>.
+        /// Writes output to log files within the <see cref="logRoot"/> folder.
         /// </summary>
         /// <param name="logRoot">The root folder to place youtube-dl output</param>
         /// <exception cref="ExeNotFoundException">Youtube-dl executable is not found in path</exception>
@@ -67,7 +67,7 @@ namespace Jaydlc.Core
             // Create the folder if it does not exist 
             _ = Directory.Exists(logRoot) ? null : Directory.CreateDirectory(logRoot);
 
-            var outString = "'" + Path.Join(this.RootFolder, "%(title)s-%(id)s.%(ext)s") + "'";
+            var outString = Path.Join(this.RootFolder, "%(title)s-%(id)s.%(ext)s");
             var ytdlArgs = new[]
             {
                 "-o", outString, "--write-info-json",
@@ -80,12 +80,14 @@ namespace Jaydlc.Core
                 var startInfo = new ProcessStartInfo("youtube-dl")
                 {
                     Arguments = string.Join(' ', ytdlArgs),
-                    RedirectStandardOutput = false,
-                    RedirectStandardError = false
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false
                 };
 
-                var process = new Process() {StartInfo = startInfo};
+                var process = new Process() { StartInfo = startInfo };
 
+                var datePrefix = DateTime.Now.ToShortDateString().Replace("/", "_").Replace(@"\", "_");
                 process.OutputDataReceived += (sender, dataReceivedEventArgs) =>
                 {
                     var content = dataReceivedEventArgs.Data;
@@ -94,10 +96,10 @@ namespace Jaydlc.Core
                         return;
                     }
 
-                    using var outFile = new FileStream(Path.Join(logRoot, "youtubedl.log"),
-                        FileMode.Append, FileAccess.ReadWrite);
+                    using var outFile = new FileStream(Path.Join(logRoot, $"{datePrefix}-youtubedl.log"),
+                        FileMode.Append);
 
-                    content = $"{DateTime.Now.ToLongTimeString()}: {content}";
+                    content = $"{DateTime.Now.ToLongTimeString()}: {content}\n";
                     var dataToWrite = Encoding.UTF8.GetBytes(content);
                     outFile.Write(dataToWrite);
                 };
@@ -110,15 +112,22 @@ namespace Jaydlc.Core
                         return;
                     }
 
-                    using var errorFile = new FileStream(Path.Join(logRoot, "error.log"),
-                        FileMode.Append, FileAccess.ReadWrite);
+                    using var errorFile = new FileStream(Path.Join(logRoot, $"{datePrefix}-error.log"),
+                        FileMode.Append);
 
-                    content = $"{DateTime.Now.ToLongTimeString()}: {content}";
+                    content = $"{DateTime.Now.ToLongTimeString()}: {content}\n";
+
+                    if (content.Contains("Finished downloading playlist"))
+                        content += "\n";
+
                     var dataToWrite = Encoding.UTF8.GetBytes(content);
                     errorFile.Write(dataToWrite);
                 };
 
                 process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
                 await process.WaitForExitAsync();
             }
             catch (Win32Exception ex)
