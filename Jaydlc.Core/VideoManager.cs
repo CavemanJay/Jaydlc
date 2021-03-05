@@ -81,16 +81,20 @@ namespace Jaydlc.Core
             _watcher = new FileSystemWatcher(RootFolder);
             _watcher.Created += VideoInfoDownloaded;
             _watcher.Deleted += VideoInfoDeleted;
+            _watcher.Renamed += VideoInfoDownloaded;
 
             _watcher.EnableRaisingEvents = true;
         }
 
         private void VideoInfoDeleted(object sender, FileSystemEventArgs e)
         {
-            var deletedVid = Videos.FirstOrDefault(x => x.JsonFile == e.Name);
-            if (deletedVid is null) return;
+            lock (Videos)
+            {
+                var deletedVid = Videos.FirstOrDefault(x => x.JsonFile == e.Name);
+                if (deletedVid is null) return;
 
-            Videos.Remove(deletedVid);
+                Videos.Remove(deletedVid);
+            }
         }
 
 
@@ -106,15 +110,20 @@ namespace Jaydlc.Core
             var info =
                 JsonSerializer.Deserialize<VideoInfo>(await File.ReadAllTextAsync(e.FullPath));
             if (info is null) return;
-            if (Videos.Contains(info)) return;
 
-            Videos.Add(info);
+            lock (Videos)
+            {
+                if (Videos.Contains(info)) return;
+
+                Videos.Add(info);
+            }
         }
 
         public void Dispose()
         {
             _watcher.Created -= VideoInfoDownloaded;
             _watcher.Deleted -= VideoInfoDeleted;
+            _watcher.Renamed -= VideoInfoDownloaded;
             _watcher.Dispose();
         }
     }
