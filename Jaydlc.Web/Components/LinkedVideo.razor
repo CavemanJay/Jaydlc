@@ -1,11 +1,36 @@
 ﻿@using Jaydlc.Core.Models
-<video controls>
-    <source src="@Video.Formats.FirstOrDefault(x => x.ext == "mp4" && x.format_note == "720p").url" type="video/mp4">
-</video>
+@using Jaydlc.Core
+@inject VideoManager VideoManager
+
+<a href="/rl" class="btn btn-primary my-2"><span class="oi oi-arrow-left"></span> Back to All Clips</a>
+
+<br/>
+
+@* <video controls autoplay> *@
+@*     <source src="@Video.Formats.FirstOrDefault(x => x.vcodec != "none" && x.acodec != "none" && x.format_note == "720p").url" type="video/mp4"> *@
+@* </video> *@
+
+<div class="embed-responsive embed-responsive-16by9">
+    <iframe
+        class="embed-responsive-item"
+        src="https://youtube.com/embed/@(Video.Id)?autoplay=1&modestbranding=1">
+    </iframe>
+</div>
+
+<p>
+    @Video.Description
+</p>
 
 @code {
 
     [Parameter]
-    public VideoInfo? Video { get; set; }
+    public string? VideoId { get; set; }
+
+    private VideoInfo? Video;
+
+    protected override void OnInitialized()
+    {
+        Video = VideoManager.Videos.SingleOrDefault(x => x.Id == VideoId);
+    }
 
 }

@@ -4,17 +4,17 @@
 @using Microsoft.Extensions.Logging
 @inject VideoManager VideoManager
 @inject ILogger<Rl> Logger
-
-@* <h3>Jay's Rocket League Clips</h3> *@
-<Title Value="Jay's RL Clips"/>
-
+@inject NavigationManager NavManager
 
 @if (VideoId is null)
 {
+    <Title Value="Jay's RL Clips"/>
+
+   @* <button class="btn btn-primary" @onclick="UpdateVideos">Update Videos</button> *@
     <div class="row">
-        @foreach (var video in VideoManager.Videos)
+        @foreach (var video in VideoManager.Videos.OrderBy(x => x.Title))
         {
-            <MatCard Class="col-lg-3 col-xs-1 m-2">
+            <MatCard Class="col-lg-3 col-xs-1 m-2" @onclick="() => VideoSelected(video.Id)">
                 <MatCardContent>
                     <MatCardMedia Wide="true" ImageUrl="@video.Thumbnail"></MatCardMedia>
                     <div style="padding: 1rem">
@@ -32,18 +32,28 @@
 }
 else
 {
-    <LinkedVideo Video="@VideoManager.Videos.SingleOrDefault(x => x.Id == VideoId)"/>
+    if (VideoManager.Videos.Any(x => x.Id == VideoId))
+    {
+        var video = VideoManager.Videos.SingleOrDefault(x => x.Id == VideoId);
+        <Title Value="@video.Title"/>
+
+        <LinkedVideo VideoId="@video.Id"/>
+    }
 }
 
-<button class="btn btn-primary" @onclick="UpdateVideos">Update Videos</button>
 
 @code {
 
     [Parameter]
     public string? VideoId { get; set; } = null;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        if (VideoId?.ToLower() == "update")
+        {
+            NavManager.NavigateTo("/rl");
+            InvokeAsync(UpdateVideos);
+        }
         VideoManager.Videos.CollectionChanged += VideosUpdated;
     }
 
@@ -55,6 +65,11 @@ else
     private async Task UpdateVideos()
     {
         await VideoManager.DownloadPlaylistInfo("/tmp/youtubedl");
+    }
+
+    private void VideoSelected(string id)
+    {
+        NavManager.NavigateTo($"/rl/{id}");
     }
 
 }
