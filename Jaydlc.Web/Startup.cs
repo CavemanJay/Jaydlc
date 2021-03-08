@@ -33,6 +33,9 @@ namespace Jaydlc.Web
             services.AddSingleton(sp =>
                 new VideoManager(Configuration.GetValue<string>("VideoInfoRoot"),
                     "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-"));
+
+            services.AddSingleton(_ =>
+                new ThmWriteupHandler("https://github.com/CavemanJay/thm", "/tmp/thm"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -60,6 +63,8 @@ namespace Jaydlc.Web
                 endpoints.MapFallbackToPage("/_Host");
 
                 endpoints.MapGraphQL();
+                
+                endpoints.HandleWebhooks();
             });
         }
     }
