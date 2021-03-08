@@ -2,6 +2,7 @@
 
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: white;
 }
 
 a, .btn-link {
@@ -42,9 +43,38 @@ a, .btn-link {
     z-index: 1000;
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+/*.navbar-brand {*/
+/*    color: gold !important;*/
+/*}*/
+
+.nav-link {
+    color: gold !important;
+}
+
+.main {
+    background-color: #1C1C1C;
+}
+
+.video-title {
+    color: gold;
+}
+
+.video-date {
+    color: white;
+    font-style: italic;
+}
+
+.video-thumbnail {
+    margin-top: 10px;
+}
+
+.video-card {
+    background-color: black;
+}

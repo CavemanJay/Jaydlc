@@ -14,15 +14,15 @@
     <div class="row">
         @foreach (var video in VideoManager.Videos.OrderBy(x => x.Title))
         {
-            <MatCard Class="col-lg-3 col-xs-1 m-2" @onclick="() => VideoSelected(video.Id)">
+            <MatCard Class="video-card col-lg-3 col-xs-1 m-2" @onclick="() => VideoSelected(video.Id)">
                 <MatCardContent>
-                    <MatCardMedia Wide="true" ImageUrl="@video.Thumbnail"></MatCardMedia>
+                    <MatCardMedia Wide="true" Class="video-thumbnail" ImageUrl="@video.Thumbnail"></MatCardMedia>
                     <div style="padding: 1rem">
-                        <MatHeadline6>@video.Title</MatHeadline6>
-                        <MatSubtitle2>@video.ParsedUploadDate.ToShortDateString()</MatSubtitle2>
+                        <MatHeadline6 Class="video-title">@video.Title</MatHeadline6>
+                        <MatSubtitle2 Class="video-date">@video.ParsedUploadDate.ToShortDateString()</MatSubtitle2>
                     </div>
 
-                    <MatBody2>
+                    <MatBody2 Class="video-desc">
                         @video.Description
                     </MatBody2>
                 </MatCardContent>
@@ -49,6 +49,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+    // TODO: This update task blocks the page from loading.
+    // Either need to figure out how to run in background with progress updates or run from separate (admin?) page.
         if (VideoId?.ToLower() == "update")
         {
             NavManager.NavigateTo("/rl");
