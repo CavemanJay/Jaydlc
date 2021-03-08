@@ -5,8 +5,19 @@ html, body {
     color: white;
 }
 
-a, .btn-link {
-    color: #0366d6;
+a {
+    /*color: #0366d6;*/
+    color: gold;
+}
+
+a:hover {
+    color: gold;
+    text-decoration: underline;
+}
+
+a:hover, .btn-link {
+    /*color: #0366d6;*/
+    color: gold;
 }
 
 .btn-primary {
