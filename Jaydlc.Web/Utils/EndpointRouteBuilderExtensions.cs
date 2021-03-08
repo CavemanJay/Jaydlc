@@ -38,6 +38,7 @@ namespace Jaydlc.Web.Utils
             if (eventType == "ping")
             {
                 logger.LogInformation("Received github ping {@event}", webhookEvent);
+                return;
             }
 
             var responseCode = webhookEvent.repository.name switch

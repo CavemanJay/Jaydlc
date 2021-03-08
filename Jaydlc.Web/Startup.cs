@@ -1,4 +1,3 @@
-using Jaydlc.Web.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -6,7 +5,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Jaydlc.Core;
 using Jaydlc.Web.GraphQL;
+using Jaydlc.Web.Utils;
 using MatBlazor;
+using Microsoft.AspNetCore.HttpOverrides;
+using Serilog;
 
 namespace Jaydlc.Web
 {
@@ -29,7 +31,6 @@ namespace Jaydlc.Web
 
             services.AddGraphQLServer().AddQueryType<Query>();
 
-            services.AddSingleton<WeatherForecastService>();
             services.AddSingleton(sp =>
                 new VideoManager(Configuration.GetValue<string>("VideoInfoRoot"),
                     "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-"));
@@ -50,10 +51,18 @@ namespace Jaydlc.Web
                 app.UseExceptionHandler("/Error");
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
+
+                app.UseForwardedHeaders(new ForwardedHeadersOptions()
+                {
+                    ForwardedHeaders = ForwardedHeaders.XForwardedFor |
+                                       ForwardedHeaders.XForwardedProto
+                });
             }
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
+
+            app.UseSerilogRequestLogging();
 
             app.UseRouting();
 
