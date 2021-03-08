@@ -62,7 +62,26 @@ namespace Jaydlc.Web
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
-            app.UseSerilogRequestLogging();
+            app.UseSerilogRequestLogging(
+                options =>
+                {
+                    if (env.IsProduction())
+                    {
+                        options.MessageTemplate =
+                            "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms to {IP}";
+                    }
+
+                    options.EnrichDiagnosticContext =
+                        (diagnosticContext, httpContext) =>
+                        {
+                            diagnosticContext.Set(
+                                "IP",
+                                httpContext.Connection.RemoteIpAddress
+                                    ?.ToString()
+                            );
+                        };
+                }
+            );
 
             app.UseRouting();
 
