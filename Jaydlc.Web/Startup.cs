@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Jaydlc.Core;
 using Jaydlc.Web.GraphQL;
+using Jaydlc.Web.HostedServices;
 using Jaydlc.Web.Utils;
 using MatBlazor;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -42,12 +43,17 @@ namespace Jaydlc.Web
 
             services.AddGraphQLServer().AddQueryType<Query>();
 
+
             services.AddSingleton(
-                sp => new VideoManager(
+                new VideoManager(
                     Configuration.GetValue<string>("VideoInfoRoot"),
-                    "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-"
+                    "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-", "/tmp/youtubedl"
                 )
             );
+
+#if !DEBUG
+            services.AddHostedService<VideoSynchronizer>();
+#endif
 
             var githubWebhookHandlerTypes = AppDomain.CurrentDomain
                 .GetAssemblies()

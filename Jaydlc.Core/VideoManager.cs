@@ -14,16 +14,30 @@ namespace Jaydlc.Core
 {
     public class VideoManager : IDisposable
     {
+        private readonly string _logRoot;
         private readonly FileSystemWatcher _watcher;
+        private bool _running = false;
+
         public string RootFolder { get; init; }
         public string PlaylistId { get; }
 
         public ObservableCollection<VideoInfo> Videos { get; init; } = new();
 
-        public VideoManager(string rootFolder, string playlistId)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="rootFolder"></param>
+        /// <param name="playlistId"></param>
+        /// <param name="logRoot">The root folder to place youtube-dl output</param>
+        public VideoManager(string rootFolder, string playlistId,
+            string logRoot)
         {
-            _ = rootFolder ?? throw new ArgumentNullException(nameof(rootFolder));
-            _ = playlistId ?? throw new ArgumentNullException(nameof(playlistId));
+            _ = rootFolder ??
+                throw new ArgumentNullException(nameof(rootFolder));
+            _ = playlistId ??
+                throw new ArgumentNullException(nameof(playlistId));
+            _logRoot = logRoot ??
+                       throw new ArgumentNullException(nameof(logRoot));
 
             this.RootFolder = Path.GetFullPath(rootFolder);
             PlaylistId = playlistId;
@@ -45,7 +59,10 @@ namespace Jaydlc.Core
             {
                 if (jsonFile is null) continue;
 
-                var info = JsonSerializer.Deserialize<VideoInfo>(File.ReadAllText(jsonFile));
+                var info =
+                    JsonSerializer.Deserialize<VideoInfo>(
+                        File.ReadAllText(jsonFile)
+                    );
 
                 if (info is null) continue;
                 if (Videos.Contains(info)) continue;
@@ -57,7 +74,9 @@ namespace Jaydlc.Core
         private void LogToFile(string root, string fileName,
             DataReceivedEventArgs dataReceivedEventArgs)
         {
-            var datePrefix = DateTime.Now.ToShortDateString().Replace("/", "_").Replace(@"\", "_");
+            var datePrefix = DateTime.Now.ToShortDateString()
+                .Replace("/", "_")
+                .Replace(@"\", "_");
 
             var content = dataReceivedEventArgs.Data;
             if (content is null)
@@ -65,8 +84,9 @@ namespace Jaydlc.Core
                 return;
             }
 
-            using var outFile = new FileStream(Path.Join(root, $"{datePrefix}-{fileName}"),
-                FileMode.Append);
+            using var outFile = new FileStream(
+                Path.Join(root, $"{datePrefix}-{fileName}"), FileMode.Append
+            );
 
             content = $"{DateTime.Now.ToLongTimeString()}: {content}\n";
             if (content.Contains("Finished downloading playlist"))
@@ -80,16 +100,21 @@ namespace Jaydlc.Core
         /// Uses youtube-dl executable to download the information about videos in a playlist.
         /// Writes output to log files within the <see cref="logRoot"/> folder.
         /// </summary>
-        /// <param name="logRoot">The root folder to place youtube-dl output</param>
         /// <exception cref="ExeNotFoundException">Youtube-dl executable is not found in path</exception>
-        public async Task DownloadPlaylistInfo(string logRoot)
+        public async Task DownloadPlaylistInfo()
         {
-            _ = logRoot ?? throw new ArgumentNullException(nameof(logRoot));
+            if (_running) return;
+
+            _running = true;
 
             // Create the folder if it does not exist 
-            _ = Directory.Exists(logRoot) ? null : Directory.CreateDirectory(logRoot);
+            _ = Directory.Exists(_logRoot)
+                ? null
+                : Directory.CreateDirectory(_logRoot);
 
-            var outString = Path.Join(this.RootFolder, "%(title)s-%(id)s.%(ext)s");
+            var outString = Path.Join(
+                this.RootFolder, "%(title)s-%(id)s.%(ext)s"
+            );
             var ytdlArgs = new[]
             {
                 "-o", outString, "--write-info-json",
@@ -111,12 +136,12 @@ namespace Jaydlc.Core
 
                 process.OutputDataReceived += (sender, data) =>
                 {
-                    this.LogToFile(logRoot, "youtubedl.log", data);
+                    this.LogToFile(_logRoot, "youtubedl.log", data);
                 };
 
                 process.ErrorDataReceived += (sender, data) =>
                 {
-                    this.LogToFile(logRoot, "error.log", data);
+                    this.LogToFile(_logRoot, "error.log", data);
                 };
 
                 process.Start();
@@ -125,13 +150,14 @@ namespace Jaydlc.Core
 
                 await process.WaitForExitAsync();
             }
-            catch (Win32Exception ex)
+            catch (Win32Exception ex) when (ex.Message.Contains("No such file"))
             {
-                if (ex.Message.Contains("No such file"))
-                {
-                    throw new ExeNotFoundException("youtube-dl");
-                }
-
+                _running = false;
+                throw new ExeNotFoundException("youtube-dl", ex);
+            }
+            catch (Exception)
+            {
+                _running = false;
                 throw;
             }
         }
@@ -141,7 +167,8 @@ namespace Jaydlc.Core
         {
             lock (Videos)
             {
-                var deletedVid = Videos.FirstOrDefault(x => x.JsonFile == e.Name);
+                var deletedVid =
+                    Videos.FirstOrDefault(x => x.JsonFile == e.Name);
                 if (deletedVid is null) return;
 
                 Videos.Remove(deletedVid);
@@ -149,7 +176,8 @@ namespace Jaydlc.Core
         }
 
 
-        private async void VideoInfoDownloaded(object sender, FileSystemEventArgs e)
+        private async void VideoInfoDownloaded(object sender,
+            FileSystemEventArgs e)
         {
             // Wait to make sure the file is fully written
             await Task.Delay(1000);
@@ -158,8 +186,9 @@ namespace Jaydlc.Core
                 return;
             }
 
-            var info =
-                JsonSerializer.Deserialize<VideoInfo>(await File.ReadAllTextAsync(e.FullPath));
+            var info = JsonSerializer.Deserialize<VideoInfo>(
+                await File.ReadAllTextAsync(e.FullPath)
+            );
             if (info is null) return;
 
             lock (Videos)

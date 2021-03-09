@@ -12,7 +12,7 @@
 
    @* <button class="btn btn-primary" @onclick="UpdateVideos">Update Videos</button> *@
     <div class="row">
-        @foreach (var video in VideoManager.Videos.OrderBy(x => x.Title))
+        @foreach (var video in VideoManager.Videos.OrderByDescending(x => x.ParsedUploadDate))
         {
             <MatCard Class="video-card col-lg-3 col-xs-1 m-2" @onclick="() => VideoSelected(video.Id)">
                 <MatCardContent>
@@ -47,15 +47,8 @@ else
     [Parameter]
     public string? VideoId { get; set; } = null;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-    // TODO: This update task blocks the page from loading.
-    // Either need to figure out how to run in background with progress updates or run from separate (admin?) page.
-        if (VideoId?.ToLower() == "update")
-        {
-            NavManager.NavigateTo("/rl");
-            InvokeAsync(UpdateVideos);
-        }
         VideoManager.Videos.CollectionChanged += VideosUpdated;
     }
 
@@ -66,7 +59,7 @@ else
 
     private async Task UpdateVideos()
     {
-        await VideoManager.DownloadPlaylistInfo("/tmp/youtubedl");
+        await VideoManager.DownloadPlaylistInfo();
     }
 
     private void VideoSelected(string id)
