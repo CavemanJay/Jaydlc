@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Jaydlc.Web.Models
+namespace Jaydlc.Core.Models
 {
     public class Config
     {

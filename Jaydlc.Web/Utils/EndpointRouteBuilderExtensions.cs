@@ -1,66 +1,79 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using Jaydlc.Web.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using System.Text.Json;
+using Jaydlc.Core;
+using Jaydlc.Core.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ILogger = Serilog.ILogger;
 
 namespace Jaydlc.Web.Utils
 {
     public static class EndpointRouteBuilderExtensions
     {
-        public static void HandleWebhooks(this IEndpointRouteBuilder endpointRouteBuilder,
+        /// <summary>
+        /// Registers github repo managers to handle webhook events sent from github when code is pushed or other events
+        /// </summary>
+        /// <param name="routeHandlers">A dictionary of handler types with the repo name as the key</param>
+        /// <param name="pattern">The url pattern to handle</param>
+        public static void HandleWebhooks(
+            this IEndpointRouteBuilder endpointRouteBuilder,
+            IReadOnlyDictionary<string, Type> routeHandlers,
             string pattern = "/gh_webhook")
         {
-            endpointRouteBuilder.MapPost(pattern, HookHandler);
+            endpointRouteBuilder.MapPost(
+                pattern, context => HookHandler(context, routeHandlers)
+            );
         }
 
-        private static async Task HookHandler(HttpContext context)
+        private static async Task HookHandler(HttpContext context,
+            IReadOnlyDictionary<string, Type> routeHandlers)
         {
             var webhookEvent =
-                await JsonSerializer.DeserializeAsync<GithubWebhookEvent>(context.Request.Body);
+                await JsonSerializer.DeserializeAsync<GithubWebhookEvent>(
+                    context.Request.Body
+                );
 
             if (webhookEvent is null)
             {
                 return;
             }
 
-            var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+            var logger = context.RequestServices
+                .GetRequiredService<ILoggerFactory>()
                 .CreateLogger("GithubWebhookEndpoint");
 
-            var eventType = context.Request.Headers.ContainsKey("X-Github-Event")
-                ? context.Request.Headers["X-GitHub-Event"][0]
-                : null;
+            var eventType =
+                context.Request.Headers.ContainsKey("X-Github-Event")
+                    ? context.Request.Headers["X-GitHub-Event"][0]
+                    : null;
 
             if (eventType == "ping")
             {
-                logger.LogInformation("Received github ping {@event}", webhookEvent);
+                logger.LogInformation(
+                    "Received github ping {@event}", webhookEvent
+                );
                 return;
             }
 
-            var responseCode = webhookEvent.repository.name switch
+            // If no handler for that repo exists
+            if (!routeHandlers.ContainsKey(webhookEvent.repository.name))
             {
-                "thm" => StatusCodes.Status200OK,
-                _ => StatusCodes.Status404NotFound,
-            };
-
-            if (responseCode == StatusCodes.Status404NotFound)
-            {
-                context.Response.StatusCode = responseCode;
+                context.Response.StatusCode = StatusCodes.Status404NotFound;
                 return;
             }
 
-            GithubHookHandler? handler = webhookEvent.repository.name switch
+            if (context.RequestServices.GetRequiredService(
+                routeHandlers[webhookEvent.repository.name]
+            ) is GithubHookHandler handler)
             {
-                "thm" => context.RequestServices.GetService<ThmWriteupHandler>(),
-                _ => null
-            };
-
-            if (handler is not null)
-            {
+                handler.Logger = context.RequestServices
+                    .GetRequiredService<ILogger>()
+                    .ForContext("RepoHandler", handler.RepoName);
                 await handler.HandleEventAsync(webhookEvent);
             }
         }
