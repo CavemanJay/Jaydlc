@@ -61,14 +61,14 @@ namespace Jaydlc.Web.Utils
             }
 
             // If no handler for that repo exists
-            if (!routeHandlers.ContainsKey(webhookEvent.repository.name))
+            if (!routeHandlers.ContainsKey(webhookEvent.GithubRepository.name))
             {
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
                 return;
             }
 
             if (context.RequestServices.GetRequiredService(
-                routeHandlers[webhookEvent.repository.name]
+                routeHandlers[webhookEvent.GithubRepository.name]
             ) is GithubHookHandler handler)
             {
                 var handlerLogger = context.RequestServices

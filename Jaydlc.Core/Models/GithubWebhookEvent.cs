@@ -56,7 +56,7 @@ namespace Jaydlc.Core.Models
         public bool site_admin { get; set; }
     }
 
-    public class Repository
+    public class GithubRepository
     {
         public int id { get; set; }
         public string node_id { get; set; }
