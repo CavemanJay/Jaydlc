@@ -49,7 +49,7 @@ namespace Jaydlc.Core
         /// Returns the list of public repositories if we are within rate limit.
         /// Returns null if otherwise
         /// </summary>
-        public async Task<IReadOnlyList<ManagedRepo>?> GetRepos()
+        public async Task<IReadOnlyCollection<ManagedRepo>?> GetRepos()
         {
             if (!CanCallApi)
             {
@@ -59,8 +59,9 @@ namespace Jaydlc.Core
             var repos = await _client.Repository.GetAllForUser(_userName);
             SetRateLimit();
 
-            return repos?.Select(x => ManagedRepo.FromGithub(_cloneRoot, x))
-                        .ToImmutableList();
+            return repos
+                   ?.Select(x => ManagedRepo.FromGithub(this._cloneRoot, x))
+                   .ToImmutableList();
         }
     }
 }

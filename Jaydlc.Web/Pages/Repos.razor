@@ -1,0 +1,38 @@
+﻿@page "/Repos"
+@using Jaydlc.Core.Models
+@using Jaydlc.Web.Utils.Extensions
+@using Jaydlc.Core
+@using Jaydlc.Web.Utils
+@using Microsoft.Extensions.Caching.Memory
+@using Microsoft.Extensions.Logging
+@inject IMemoryCache cache
+@inject GithubRepoManager RepoManager
+@inject ILogger<Repos> Logger
+
+
+<h3>Repos</h3>
+
+@code {
+    private IReadOnlyCollection<ManagedRepo> _repos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProjects();
+    }
+
+    private async Task LoadProjects()
+    {
+        var recordKey = "Repos_" + DateTime.Now.ToString("yyyyMMdd_hh");
+
+        _repos = cache.GetRecord<IReadOnlyCollection<ManagedRepo>>(recordKey);
+
+        if (_repos is null)
+        {
+            _repos = await RepoManager.GetRepos();
+            Logger.LogDebug("Loaded data from api");
+
+            cache.SetRecord(recordKey, _repos, Constants.RepositoryCacheTimeout);
+        }
+    }
+
+}

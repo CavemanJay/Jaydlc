@@ -1,18 +1,18 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using Jaydlc.Core;
 using Jaydlc.Web.GraphQL;
-using Jaydlc.Web.HostedServices;
 using Jaydlc.Web.Utils;
 using MatBlazor;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace Jaydlc.Web
@@ -44,12 +44,23 @@ namespace Jaydlc.Web
             services.AddGraphQLServer().AddQueryType<Query>();
 
 
+            // TODO: Replace concrete implementations with interfaces
+            services.AddSingleton(
+                serviceProvider => new GithubRepoManager(
+                    "CavemanJay",
+                    serviceProvider.GetRequiredService<IWebHostEnvironment>()
+                                   .WebRootPath
+                )
+            );
+
             services.AddSingleton(
                 new VideoManager(
                     Configuration.GetValue<string>("VideoInfoRoot"),
                     "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-", "/tmp/youtubedl"
                 )
             );
+
+            services.AddMemoryCache();
 
 #if !DEBUG
             services.AddHostedService<VideoSynchronizer>();
@@ -124,7 +135,7 @@ namespace Jaydlc.Web
                             diagnosticContext.Set(
                                 "IP",
                                 httpContext.Connection.RemoteIpAddress
-                                    ?.ToString()
+                                           ?.ToString()
                             );
                         };
                 }
