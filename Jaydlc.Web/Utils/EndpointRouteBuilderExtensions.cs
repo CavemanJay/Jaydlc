@@ -71,10 +71,11 @@ namespace Jaydlc.Web.Utils
                 routeHandlers[webhookEvent.repository.name]
             ) is GithubHookHandler handler)
             {
-                handler.Logger = context.RequestServices
-                    .GetRequiredService<ILogger>()
-                    .ForContext("RepoHandler", handler.RepoName);
-                await handler.HandleEventAsync(webhookEvent);
+                var handlerLogger = context.RequestServices
+                    .GetRequiredService<ILogger>();
+                handler.SetLogger(handlerLogger);
+
+                handler.HandleEvent(webhookEvent);
             }
         }
     }
