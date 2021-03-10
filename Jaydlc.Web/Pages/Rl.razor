@@ -1,6 +1,7 @@
 ﻿@page "/Rl/{videoId?}"
 @using Jaydlc.Core
 @using System.Collections.Specialized
+@using Jaydlc.Core.Models
 @using Microsoft.Extensions.Logging
 @inject VideoManager VideoManager
 @inject ILogger<Rl> Logger
@@ -10,9 +11,32 @@
 {
     <Title Value="Jay's RL Clips"/>
 
+    <div class="row rl-video-bar" style="display: block">
+        <label style="color: gold" class="mx-2">
+            Sort By:
+            <select @bind="_sortByOptions">
+                @foreach (var choice in _sortOptionChoices)
+                {
+                    <option value="@(choice)">@choice</option>
+                }
+            </select>
+        </label>
+
+        @foreach (var direction in _sortDirectionChoices)
+        {
+            <label class="mx-1 align-content-center">
+                <input type="radio" name="sortDirection" checked="@(_sortDirection == direction)" @onchange="@(() => _sortDirection = direction)"/> <span style="color: gold">@direction</span>
+            </label>
+        }
+
+
+        @* <MatDatePicker @bind-Value="StartDate" Label="Start date"></MatDatePicker> *@
+        @* <MatDatePicker @bind-Value="EndDate" Label="End date"></MatDatePicker> *@
+    </div>
+
    @* <button class="btn btn-primary" @onclick="UpdateVideos">Update Videos</button> *@
     <div class="row">
-        @foreach (var video in VideoManager.Videos.OrderByDescending(x => x.ParsedUploadDate))
+        @foreach (var video in GetVideos())
         {
             <MatCard Class="video-card col-lg-3 col-xs-1 m-2" @onclick="() => VideoSelected(video.Id)">
                 <MatCardContent>
@@ -41,11 +65,46 @@ else
     }
 }
 
-
 @code {
 
     [Parameter]
     public string? VideoId { get; set; } = null;
+
+    private SortByOptions _sortByOptions = SortByOptions.Date;
+    private SortDirection _sortDirection = SortDirection.Descending;
+    // DateTime? StartDate = null;
+    // DateTime? EndDate = null;
+
+    readonly SortByOptions[] _sortOptionChoices = Enum.GetValues<SortByOptions>().ToArray();
+    readonly SortDirection[] _sortDirectionChoices = Enum.GetValues<SortDirection>().ToArray();
+
+    private IEnumerable<VideoInfo> GetVideos()
+    {
+        IEnumerable<VideoInfo> videos = VideoManager.Videos;
+
+        videos = _sortDirection switch
+        {
+            SortDirection.Ascending when _sortByOptions == SortByOptions.Date => videos.OrderBy(x => x.UploadDate),
+            SortDirection.Ascending when _sortByOptions == SortByOptions.Title => videos.OrderBy(x => x.Title),
+            SortDirection.Descending when _sortByOptions == SortByOptions.Date => videos.OrderByDescending(x => x.UploadDate),
+            SortDirection.Descending when _sortByOptions == SortByOptions.Title => videos.OrderByDescending(x => x.Title),
+            _ => videos
+            };
+
+        return videos;
+    }
+
+    enum SortByOptions
+    {
+        Date,
+        Title
+    }
+
+    enum SortDirection
+    {
+        Ascending,
+        Descending
+    }
 
     protected override void OnInitialized()
     {
@@ -57,14 +116,10 @@ else
         this.InvokeAsync(StateHasChanged);
     }
 
-    private async Task UpdateVideos()
-    {
-        await VideoManager.DownloadPlaylistInfo();
-    }
-
     private void VideoSelected(string id)
     {
         NavManager.NavigateTo($"/rl/{id}");
     }
+
 
 }

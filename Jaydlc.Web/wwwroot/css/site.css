@@ -89,3 +89,23 @@ a:hover, .btn-link {
 .video-card {
     background-color: black;
 }
+
+.rl-video-bar {
+    /*background-color: black;*/
+    /*outline: 10px black;*/
+    border: 1px black double;
+}
+
+select {
+    /*font-size: 1.2rem;*/
+    color: gold;
+    /*background-color: #252525;*/
+    display: inline-block;
+    padding: 4px 3px 3px 5px;
+    /*margin: 0;*/
+    outline: none; /* remove focus ring from Webkit */
+    line-height: 1.2;
+    /*background: #000;*/
+    background-color: #1C1C1C;
+    border: 0;
+}
