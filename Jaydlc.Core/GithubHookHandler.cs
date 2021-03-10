@@ -1,9 +1,6 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Threading.Tasks;
-using Jaydlc.Core.Exceptions;
 using Jaydlc.Core.Models;
 using LibGit2Sharp;
 using Serilog;
@@ -48,10 +45,14 @@ namespace Jaydlc.Core
         /// <summary>
         /// Handles a webhook event created by github
         /// </summary>
+        // TODO: Find use for the webhookEvent parameter
         public void HandleEvent(GithubWebhookEvent webhookEvent)
         {
             if (!IsCloned)
             {
+                Logger?.Debug(
+                    "Cloning repository to {@path}", ClonePath.FullName
+                );
                 Repository.Clone(RepositoryUrl, ClonePath.FullName);
                 _repository = new Repository(ClonePath.FullName);
                 return;
@@ -69,14 +70,15 @@ namespace Jaydlc.Core
             // This shouldn't really happen since the repo on the server should not be edited directly
             if (mergeResult.Status == MergeStatus.Conflicts)
             {
-                Logger?.Error(
-                    "Pull operation resulted in a merge conflict"
-                );
+                Logger?.Error("Pull operation resulted in a merge conflict");
             }
         }
 
+        [SuppressMessage("ReSharper", "VirtualMemberCallInConstructor")]
         protected GithubHookHandler(string repoRootUri, string cloneRoot)
         {
+            _ = RepoName ?? throw new Exception("RepoName cannot be null");
+
             this.RepositoryUrl = repoRootUri + this.RepoName;
             ClonePath =
                 Directory.CreateDirectory(Path.Join(cloneRoot, this.RepoName));
@@ -99,57 +101,5 @@ namespace Jaydlc.Core
         public string RepositoryUrl { get; init; }
 
         public abstract string RepoName { get; }
-
-        /// <summary>
-        /// Clones the repository to <see cref="ClonePath"/> based on the <see cref="RepositoryUrl"/>
-        /// </summary>
-        /// <exception cref="ExeNotFoundException">Git is not found in path</exception>
-        protected Task CloneRepo()
-        {
-            var processInfo = new ProcessStartInfo(
-                "git", $"clone {RepositoryUrl} {ClonePath.FullName}"
-            )
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false
-            };
-
-            var process = new Process() {StartInfo = processInfo};
-
-            Logger?.Debug(
-                "Cloning {repository} to {path}", RepoName, ClonePath.FullName
-            );
-
-            try
-            {
-                process.Start();
-                return process.WaitForExitAsync();
-            }
-            catch (Win32Exception ex)
-            {
-                if (ex.Message.Contains("No such file"))
-                {
-                    throw new ExeNotFoundException("git");
-                }
-
-                throw;
-            }
-        }
-
-        protected Task PullChanges()
-        {
-            var processInfo = new ProcessStartInfo("git", "pull")
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false, WorkingDirectory = ClonePath.FullName
-            };
-
-            var process = new Process {StartInfo = processInfo};
-            process.Start();
-
-            return process.WaitForExitAsync();
-        }
     }
 }
