@@ -1,26 +1,78 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Jaydlc.Core.Exceptions;
 using Jaydlc.Core.Models;
+using LibGit2Sharp;
 using Serilog;
+using Repository = LibGit2Sharp.Repository;
 
 namespace Jaydlc.Core
 {
     public abstract class GithubHookHandler
     {
-        public ILogger? Logger { get; set; }
+        protected ILogger? Logger { get; private set; } = null;
+        private Repository? _repository { get; set; }
+
+        private bool _loggerInitialized = false;
+
+        /// <summary>
+        /// Sets the logger for the handler. Will not overwrite an existing logger instance.
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <exception cref="ArgumentNullException"><paramref name="logger"/> is null</exception>
+        public void SetLogger(ILogger logger)
+        {
+            if (_loggerInitialized && Logger is not null)
+            {
+                return;
+            }
+
+            // ReSharper disable once ConstantConditionalAccessQualifier
+            Logger = logger?.ForContext("Repository", _repository, true) ??
+                     throw new ArgumentNullException(nameof(logger));
+            _loggerInitialized = true;
+        }
+
+        /// <summary>
+        /// Sets the logger to null to allow for a new logger to be set
+        /// </summary>
+        public void ClearLogger()
+        {
+            Logger = null;
+            _loggerInitialized = false;
+        }
 
         /// <summary>
         /// Handles a webhook event created by github
         /// </summary>
-        public virtual async Task HandleEventAsync(
-            GithubWebhookEvent webhookEvent)
+        public void HandleEvent(GithubWebhookEvent webhookEvent)
         {
             if (!IsCloned)
-                await CloneRepo();
+            {
+                Repository.Clone(RepositoryUrl, ClonePath.FullName);
+                _repository = new Repository(ClonePath.FullName);
+                return;
+            }
+
+            var signature = new Signature(
+                "Jay", "cuevasj@usf.edu", DateTimeOffset.Now
+            );
+
+            var pullOptions = new PullOptions();
+            var mergeResult = Commands.Pull(
+                _repository, signature, pullOptions
+            );
+
+            // This shouldn't really happen since the repo on the server should not be edited directly
+            if (mergeResult.Status == MergeStatus.Conflicts)
+            {
+                Logger?.Error(
+                    "Pull operation resulted in a merge conflict"
+                );
+            }
         }
 
         protected GithubHookHandler(string repoRootUri, string cloneRoot)
@@ -34,8 +86,7 @@ namespace Jaydlc.Core
         /// Whether or not the repo has been cloned
         /// </summary>
         private bool IsCloned =>
-            ClonePath.Exists &&
-            ClonePath.GetDirectories().Any(x => x.Name == ".git");
+            Repository.IsValid(ClonePath.FullName);
 
         /// <summary>
         /// The folder on the system to clone the repo to
@@ -69,10 +120,10 @@ namespace Jaydlc.Core
             Logger?.Debug(
                 "Cloning {repository} to {path}", RepoName, ClonePath.FullName
             );
-            process.Start();
 
             try
             {
+                process.Start();
                 return process.WaitForExitAsync();
             }
             catch (Win32Exception ex)
