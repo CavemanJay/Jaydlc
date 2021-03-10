@@ -22,15 +22,16 @@ namespace Jaydlc.Core
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> is null</exception>
         public void SetLogger(ILogger logger)
         {
-            if (_loggerInitialized && Logger is not null)
+            if (this._loggerInitialized && this.Logger is not null)
             {
                 return;
             }
 
             // ReSharper disable once ConstantConditionalAccessQualifier
-            Logger = logger?.ForContext("Repository", _repository, true) ??
-                     throw new ArgumentNullException(nameof(logger));
-            _loggerInitialized = true;
+            this.Logger =
+                logger?.ForContext("Repository", this._repository, true) ??
+                throw new ArgumentNullException(nameof(logger));
+            this._loggerInitialized = true;
         }
 
         /// <summary>
@@ -38,8 +39,8 @@ namespace Jaydlc.Core
         /// </summary>
         public void ClearLogger()
         {
-            Logger = null;
-            _loggerInitialized = false;
+            this.Logger = null;
+            this._loggerInitialized = false;
         }
 
         /// <summary>
@@ -48,13 +49,13 @@ namespace Jaydlc.Core
         // TODO: Find use for the webhookEvent parameter
         public void HandleEvent(GithubWebhookEvent webhookEvent)
         {
-            if (!IsCloned)
+            if (!this.IsCloned)
             {
-                Logger?.Debug(
-                    "Cloning repository to {@path}", ClonePath.FullName
+                this.Logger?.Debug(
+                    "Cloning repository to {@path}", this.ClonePath.FullName
                 );
-                Repository.Clone(RepositoryUrl, ClonePath.FullName);
-                _repository = new Repository(ClonePath.FullName);
+                Repository.Clone(this.RepositoryUrl, this.ClonePath.FullName);
+                this._repository = new Repository(this.ClonePath.FullName);
                 return;
             }
 
@@ -64,23 +65,25 @@ namespace Jaydlc.Core
 
             var pullOptions = new PullOptions();
             var mergeResult = Commands.Pull(
-                _repository, signature, pullOptions
+                this._repository, signature, pullOptions
             );
 
             // This shouldn't really happen since the repo on the server should not be edited directly
             if (mergeResult.Status == MergeStatus.Conflicts)
             {
-                Logger?.Error("Pull operation resulted in a merge conflict");
+                this.Logger?.Error(
+                    "Pull operation resulted in a merge conflict"
+                );
             }
         }
 
         [SuppressMessage("ReSharper", "VirtualMemberCallInConstructor")]
         protected GithubHookHandler(string repoRootUri, string cloneRoot)
         {
-            _ = RepoName ?? throw new Exception("RepoName cannot be null");
+            _ = this.RepoName ?? throw new Exception("RepoName cannot be null");
 
             this.RepositoryUrl = repoRootUri + this.RepoName;
-            ClonePath =
+            this.ClonePath =
                 Directory.CreateDirectory(Path.Join(cloneRoot, this.RepoName));
         }
 
@@ -88,7 +91,7 @@ namespace Jaydlc.Core
         /// Whether or not the repo has been cloned
         /// </summary>
         private bool IsCloned =>
-            Repository.IsValid(ClonePath.FullName);
+            Repository.IsValid(this.ClonePath.FullName);
 
         /// <summary>
         /// The folder on the system to clone the repo to

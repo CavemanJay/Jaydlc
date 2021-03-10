@@ -36,26 +36,28 @@ namespace Jaydlc.Core
                 throw new ArgumentNullException(nameof(rootFolder));
             _ = playlistId ??
                 throw new ArgumentNullException(nameof(playlistId));
-            _logRoot = logRoot ??
-                       throw new ArgumentNullException(nameof(logRoot));
+            this._logRoot = logRoot ??
+                            throw new ArgumentNullException(nameof(logRoot));
 
             this.RootFolder = Path.GetFullPath(rootFolder);
-            PlaylistId = playlistId;
+            this.PlaylistId = playlistId;
 
-            initVideos();
+            this.initVideos();
 
-            _watcher = new FileSystemWatcher(RootFolder);
-            _watcher.Created += VideoInfoDownloaded;
-            _watcher.Deleted += VideoInfoDeleted;
-            _watcher.Renamed += VideoInfoDownloaded;
+            this._watcher = new FileSystemWatcher(this.RootFolder);
+            this._watcher.Created += this.VideoInfoDownloaded;
+            this._watcher.Deleted += this.VideoInfoDeleted;
+            this._watcher.Renamed += this.VideoInfoDownloaded;
 
-            _watcher.EnableRaisingEvents = true;
+            this._watcher.EnableRaisingEvents = true;
         }
 
         private void initVideos()
         {
-            foreach (var jsonFile in Directory.GetFiles(RootFolder)
-                .Where(x => x.EndsWith("info.json")))
+            foreach (var jsonFile in Directory.GetFiles(this.RootFolder)
+                                              .Where(
+                                                  x => x.EndsWith("info.json")
+                                              ))
             {
                 if (jsonFile is null) continue;
 
@@ -65,18 +67,18 @@ namespace Jaydlc.Core
                     );
 
                 if (info is null) continue;
-                if (Videos.Contains(info)) continue;
+                if (this.Videos.Contains(info)) continue;
 
-                Videos.Add(info);
+                this.Videos.Add(info);
             }
         }
 
-        private void LogToFile(string root, string fileName,
+        private static void LogToFile(string root, string fileName,
             DataReceivedEventArgs dataReceivedEventArgs)
         {
             var datePrefix = DateTime.Now.ToShortDateString()
-                .Replace("/", "_")
-                .Replace(@"\", "_");
+                                     .Replace("/", "_")
+                                     .Replace(@"\", "_");
 
             var content = dataReceivedEventArgs.Data;
             if (content is null)
@@ -103,14 +105,14 @@ namespace Jaydlc.Core
         /// <exception cref="ExeNotFoundException">Youtube-dl executable is not found in path</exception>
         public async Task DownloadPlaylistInfo()
         {
-            if (_running) return;
+            if (this._running) return;
 
-            _running = true;
+            this._running = true;
 
             // Create the folder if it does not exist 
-            _ = Directory.Exists(_logRoot)
+            _ = Directory.Exists(this._logRoot)
                 ? null
-                : Directory.CreateDirectory(_logRoot);
+                : Directory.CreateDirectory(this._logRoot);
 
             var outString = Path.Join(
                 this.RootFolder, "%(title)s-%(id)s.%(ext)s"
@@ -136,12 +138,12 @@ namespace Jaydlc.Core
 
                 process.OutputDataReceived += (sender, data) =>
                 {
-                    this.LogToFile(_logRoot, "youtubedl.log", data);
+                    LogToFile(this._logRoot, "youtubedl.log", data);
                 };
 
                 process.ErrorDataReceived += (sender, data) =>
                 {
-                    this.LogToFile(_logRoot, "error.log", data);
+                    LogToFile(this._logRoot, "error.log", data);
                 };
 
                 process.Start();
@@ -152,12 +154,12 @@ namespace Jaydlc.Core
             }
             catch (Win32Exception ex) when (ex.Message.Contains("No such file"))
             {
-                _running = false;
+                this._running = false;
                 throw new ExeNotFoundException("youtube-dl", ex);
             }
             catch (Exception)
             {
-                _running = false;
+                this._running = false;
                 throw;
             }
         }
@@ -165,13 +167,13 @@ namespace Jaydlc.Core
 
         private void VideoInfoDeleted(object sender, FileSystemEventArgs e)
         {
-            lock (Videos)
+            lock (this.Videos)
             {
                 var deletedVid =
-                    Videos.FirstOrDefault(x => x.JsonFile == e.Name);
+                    this.Videos.FirstOrDefault(x => x.JsonFile == e.Name);
                 if (deletedVid is null) return;
 
-                Videos.Remove(deletedVid);
+                this.Videos.Remove(deletedVid);
             }
         }
 
@@ -191,29 +193,29 @@ namespace Jaydlc.Core
             );
             if (info is null) return;
 
-            lock (Videos)
+            lock (this.Videos)
             {
-                var existing = Videos.FirstOrDefault(x => x.Id == info.Id);
+                var existing = this.Videos.FirstOrDefault(x => x.Id == info.Id);
 
                 // Add the video to the list if it doesn't exist yet
                 if (existing is null)
                 {
-                    Videos.Add(info);
+                    this.Videos.Add(info);
                     return;
                 }
 
                 // Update the video if it exists already
-                var index = Videos.IndexOf(existing);
-                Videos[index] = info;
+                var index = this.Videos.IndexOf(existing);
+                this.Videos[index] = info;
             }
         }
 
         public void Dispose()
         {
-            _watcher.Created -= VideoInfoDownloaded;
-            _watcher.Deleted -= VideoInfoDeleted;
-            _watcher.Renamed -= VideoInfoDownloaded;
-            _watcher.Dispose();
+            this._watcher.Created -= this.VideoInfoDownloaded;
+            this._watcher.Deleted -= this.VideoInfoDeleted;
+            this._watcher.Renamed -= this.VideoInfoDownloaded;
+            this._watcher.Dispose();
         }
     }
 }

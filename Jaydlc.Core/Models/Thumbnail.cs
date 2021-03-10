@@ -10,9 +10,8 @@ namespace Jaydlc.Core.Models
         public string resolution { get; set; }
         public string id { get; set; }
 
-        public bool IsJpeg => url.Contains(".jpg");
+        public bool IsJpeg => this.url.Contains(".jpg");
 
-        public string? JpegUrl =>
-            url.Substring(0, url.IndexOf(".jpg") + 3);
+        public string? JpegUrl => this.url.Substring(0, this.url.IndexOf(".jpg") + 3);
     }
 }

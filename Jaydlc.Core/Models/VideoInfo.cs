@@ -96,9 +96,9 @@ namespace Jaydlc.Core.Models
         [JsonPropertyName("_filename")]
         public string FileName { get; init; }
 
-        public DateTime ParsedUploadDate => new DateTime(int.Parse(UploadDate.Substring(0, 4)),
-            int.Parse(UploadDate.Substring(4, 2)), int.Parse(UploadDate.Substring(6, 2)));
+        public DateTime ParsedUploadDate => new(int.Parse(this.UploadDate.Substring(0, 4)),
+            int.Parse(this.UploadDate.Substring(4, 2)), int.Parse(this.UploadDate.Substring(6, 2)));
 
-        public string JsonFile => $"{Title}-{Id}.info.json";
+        public string JsonFile => $"{this.Title}-{this.Id}.info.json";
     }
 }

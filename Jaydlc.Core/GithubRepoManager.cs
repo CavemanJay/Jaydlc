@@ -18,31 +18,32 @@ namespace Jaydlc.Core
 
         private void SetRateLimit()
         {
-            var rateLimit = _client.GetLastApiInfo()?.RateLimit;
+            var rateLimit = this._client.GetLastApiInfo()?.RateLimit;
             if (rateLimit is null)
             {
                 // Set it to some arbitrary number for now. (assumes we can still call the api)
-                RateLimitRemaining = 5;
-                RateLimitResetTime = null;
+                this.RateLimitRemaining = 5;
+                this.RateLimitResetTime = null;
                 return;
             }
 
-            RateLimitRemaining = rateLimit.Remaining;
-            RateLimitResetTime = rateLimit.Reset.ToLocalTime().Date;
+            this.RateLimitRemaining = rateLimit.Remaining;
+            this.RateLimitResetTime = rateLimit.Reset.ToLocalTime().Date;
         }
 
         /// <summary>
         /// A determination of whether or not we can call the github api based on the number of remaining calls and the time that our limit is reset
         /// </summary>
-        private bool CanCallApi => RateLimitRemaining > 0 ||
-                                   DateTime.Now > RateLimitResetTime;
+        private bool CanCallApi =>
+            this.RateLimitRemaining > 0 ||
+            DateTime.Now > this.RateLimitResetTime;
 
         public GithubRepoManager(string userName, string cloneRoot)
         {
-            _userName = userName;
-            _cloneRoot = cloneRoot;
-            _client = new GitHubClient(new ProductHeaderValue(userName));
-            SetRateLimit();
+            this._userName = userName;
+            this._cloneRoot = cloneRoot;
+            this._client = new GitHubClient(new ProductHeaderValue(userName));
+            this.SetRateLimit();
         }
 
         /// <summary>
@@ -51,13 +52,14 @@ namespace Jaydlc.Core
         /// </summary>
         public async Task<IReadOnlyCollection<ManagedRepo>?> GetRepos()
         {
-            if (!CanCallApi)
+            if (!this.CanCallApi)
             {
                 return null;
             }
 
-            var repos = await _client.Repository.GetAllForUser(_userName);
-            SetRateLimit();
+            var repos =
+                await this._client.Repository.GetAllForUser(this._userName);
+            this.SetRateLimit();
 
             return repos
                    ?.Select(x => ManagedRepo.FromGithub(this._cloneRoot, x))

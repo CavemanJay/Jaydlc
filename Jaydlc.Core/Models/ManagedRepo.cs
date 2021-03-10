@@ -8,27 +8,27 @@ namespace Jaydlc.Core.Models
     public class ManagedRepo
     {
         private readonly string _cloneRoot;
-        private string ClonePath => Path.Join(_cloneRoot, GithubRepo!.Name);
-        private LibGit2Sharp.Repository? GitRepo { get; set; }
+        private string ClonePath => Path.Join(this._cloneRoot, this.GithubRepo!.Name);
+        private Repository? GitRepo { get; set; }
         private Octokit.Repository? GithubRepo { get; set; }
 
-        public string Name => GithubRepo?.Name ?? GitRepo.Name() ??
+        public string Name =>
+            this.GithubRepo?.Name ?? this.GitRepo.Name() ??
             throw new Exception("Unable to retrieve name for repository.");
 
-        public bool IsCloned => GitRepo is not null;
-        public bool HasRemoteInfo => GithubRepo is not null;
+        public bool IsCloned => this.GitRepo is not null;
+        public bool HasRemoteInfo => this.GithubRepo is not null;
 
         public string? ReadMeUrl()
         {
-            var status = GitRepo?.RetrieveStatus("README.md");
+            var status = this.GitRepo?.RetrieveStatus("README.md");
 
             if (status == FileStatus.Nonexistent)
             {
                 return null;
             }
 
-            var baseUrl = GithubRepo?.HtmlUrl ??
-                          GitRepo.RemoteUrl()?.Replace(".git", "");
+            var baseUrl = this.GithubRepo?.HtmlUrl ?? this.GitRepo.RemoteUrl()?.Replace(".git", "");
 
 
             return baseUrl is null ? null : baseUrl + "/blob/master/README.md";
@@ -38,11 +38,11 @@ namespace Jaydlc.Core.Models
         {
             this.GithubRepo = githubRepo;
 
-            _cloneRoot = Path.GetFullPath(cloneRoot);
+            this._cloneRoot = Path.GetFullPath(cloneRoot);
 
-            if (Repository.IsValid(ClonePath))
+            if (Repository.IsValid(this.ClonePath))
             {
-                this.GitRepo = new Repository(ClonePath);
+                this.GitRepo = new Repository(this.ClonePath);
             }
         }
 
@@ -53,16 +53,16 @@ namespace Jaydlc.Core.Models
 
         public void Clone()
         {
-            if (IsCloned)
+            if (this.IsCloned)
             {
                 return;
             }
 
             var path = Repository.Clone(
-                GithubRepo?.CloneUrl ?? GitRepo.RemoteUrl(),
-                Path.Join(_cloneRoot, Name)
+                this.GithubRepo?.CloneUrl ?? this.GitRepo.RemoteUrl(),
+                Path.Join(this._cloneRoot, this.Name)
             );
-            GitRepo = new Repository(path);
+            this.GitRepo = new Repository(path);
         }
 
         public static ManagedRepo FromClonedRepo(string repoPath)
@@ -76,7 +76,7 @@ namespace Jaydlc.Core.Models
         public static ManagedRepo FromGithub(string cloneRoot,
             Octokit.Repository repo)
         {
-            return new ManagedRepo(cloneRoot, repo);
+            return new(cloneRoot, repo);
         }
     }
 }

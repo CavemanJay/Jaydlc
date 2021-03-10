@@ -54,7 +54,7 @@ else
 
     private void VideosUpdated(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        this.InvokeAsync(StateHasChanged);
+        InvokeAsync(StateHasChanged);
     }
 
     private async Task UpdateVideos()

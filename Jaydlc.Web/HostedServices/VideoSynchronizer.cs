@@ -15,8 +15,8 @@ namespace Jaydlc.Web.HostedServices
         public VideoSynchronizer(ILogger<VideoSynchronizer> logger,
             VideoManager videoManager)
         {
-            _logger = logger;
-            _videoManager = videoManager;
+            this._logger = logger;
+            this._videoManager = videoManager;
         }
 
         protected override async Task ExecuteAsync(
@@ -24,11 +24,11 @@ namespace Jaydlc.Web.HostedServices
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation(
+                this._logger.LogInformation(
                     "Worker running at: {time}", DateTime.Now
                 );
-                
-                await _videoManager.DownloadPlaylistInfo();
+
+                await this._videoManager.DownloadPlaylistInfo();
                 await Task.Delay(TimeSpan.FromHours(1.5), stoppingToken);
             }
         }

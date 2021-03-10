@@ -12,7 +12,6 @@ using Jaydlc.Web.GraphQL;
 using Jaydlc.Web.Utils;
 using MatBlazor;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace Jaydlc.Web
@@ -21,7 +20,7 @@ namespace Jaydlc.Web
     {
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            this.Configuration = configuration;
         }
 
         public IConfiguration Configuration { get; }
@@ -32,10 +31,9 @@ namespace Jaydlc.Web
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            var repoRootUrl = Configuration.GetValue<string>("RepoBaseUrl") ??
-                              throw new Exception(
-                                  "RepoBaseUrl configuration not specified"
-                              );
+            var repoRootUrl =
+                this.Configuration.GetValue<string>("RepoBaseUrl") ??
+                throw new Exception("RepoBaseUrl configuration not specified");
 
             services.AddRazorPages();
             services.AddServerSideBlazor();
@@ -55,7 +53,7 @@ namespace Jaydlc.Web
 
             services.AddSingleton(
                 new VideoManager(
-                    Configuration.GetValue<string>("VideoInfoRoot"),
+                    this.Configuration.GetValue<string>("VideoInfoRoot"),
                     "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-", "/tmp/youtubedl"
                 )
             );
@@ -91,7 +89,7 @@ namespace Jaydlc.Web
 
                 services.AddSingleton(handlerType, instance);
                 GithubHookHandler handler = (GithubHookHandler) instance;
-                GitHubProjectHandlers[handler.RepoName] = handlerType;
+                this.GitHubProjectHandlers[handler.RepoName] = handlerType;
             }
         }
 
@@ -152,7 +150,7 @@ namespace Jaydlc.Web
 
                     endpoints.MapGraphQL();
 
-                    endpoints.HandleWebhooks(GitHubProjectHandlers);
+                    endpoints.HandleWebhooks(this.GitHubProjectHandlers);
                 }
             );
         }
