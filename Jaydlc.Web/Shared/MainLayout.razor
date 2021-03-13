@@ -1,4 +1,11 @@
-﻿@inherits LayoutComponentBase
+﻿@using Serilog
+@using Microsoft.AspNetCore.Http
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager NavManager
+@inject ILogger Logger
+@inject IHttpContextAccessor HttpContextAccessor
+
 
 <div class="page">
     <div class="sidebar">
@@ -17,3 +24,22 @@
         </div>
     </div>
 </div>
+
+@code
+{
+
+    protected override void OnInitialized()
+    {
+        NavManager.LocationChanged += NavManagerOnLocationChanged;
+    }
+
+    private void NavManagerOnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        Logger.Debug("{RemoteIp} navigated to: " + e.Location, HttpContextAccessor.HttpContext?.Connection.RemoteIpAddress);
+    }
+
+    void IDisposable.Dispose()
+    {
+        NavManager.LocationChanged -= NavManagerOnLocationChanged;
+    }
+}
