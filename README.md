@@ -42,3 +42,21 @@
     - For getting the data about my own videos that I upload without having to go through the youtube api
 
 - [git](https://git-scm.com/)
+
+## Things I still want to add
+
+- Auto updating module
+    - Possible implementations
+        - Github webhook listener watching specific branch
+         
+        - GRPC service that checks the authentication header against some environment variable
+            - Upload tar or zip of website contents
+            - Extract archive to some specified folder (timestamped?)
+            - Either start an exe/script with a delay (forking/disowning) and then shutdown current process
+            - Have external script startup the website in the proper folder without ownership of the process
+
+        - Website runs under some sort of controller process that can kill the site and replace with new version
+            - Some sort of custom exe? Or maybe some linux program already exists that can do this
+    
+- Some sort of way to browse my projects on github
+- Website changelog?
