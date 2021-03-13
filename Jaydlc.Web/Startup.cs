@@ -5,14 +5,16 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Jaydlc.Core;
 using Jaydlc.Web.GraphQL;
+using Jaydlc.Web.HostedServices;
 using Jaydlc.Web.Utils;
 using MatBlazor;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
+using Serilog.Events;
 
 namespace Jaydlc.Web
 {
@@ -23,7 +25,7 @@ namespace Jaydlc.Web
             this.Configuration = configuration;
         }
 
-        public IConfiguration Configuration { get; }
+        private IConfiguration Configuration { get; }
 
         private Dictionary<string, Type> GitHubProjectHandlers { get; } = new();
 
@@ -33,28 +35,32 @@ namespace Jaydlc.Web
         {
             var repoRootUrl =
                 this.Configuration.GetValue<string>("RepoBaseUrl") ??
-                throw new Exception("RepoBaseUrl configuration not specified");
+                throw new Exception(
+                    "RepoBaseUrl configuration value not specified"
+                );
 
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddMatBlazor();
 
-            services.AddGraphQLServer().AddQueryType<Query>();
+            services.AddMemoryCache();
 
+            services.AddHttpContextAccessor();
+
+            services.AddGraphQLServer().AddQueryType<Query>();
 
             // TODO: Replace concrete implementations with interfaces
             services.AddSingleton(
-                serviceProvider => new GithubRepoManager(
-                    "CavemanJay",
-                    serviceProvider.GetRequiredService<IWebHostEnvironment>()
-                                   .WebRootPath
+                new GithubRepoManager(
+                    "CavemanJay", Path.Join(Constants.TempFolder, "repos")
                 )
             );
 
             services.AddSingleton(
                 new VideoManager(
                     this.Configuration.GetValue<string>("VideoInfoRoot"),
-                    "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-", "/tmp/youtubedl"
+                    "PLcMVeicy89wnqOrlvFrOnljwYKGjizvx-",
+                    Path.Join(Constants.TempFolder, "youtubedl")
                 )
             );
 
@@ -72,11 +78,7 @@ namespace Jaydlc.Web
                          !x.IsAbstract && !x.IsInterface
                 );
 
-            var repoCloneRoot =
-                RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                    ? Environment.ExpandEnvironmentVariables("%TEMP%")
-                    : "/tmp";
-
+            var repoCloneRoot = Constants.TempFolder;
 
             foreach (var handlerType in githubWebhookHandlerTypes)
             {
@@ -127,6 +129,22 @@ namespace Jaydlc.Web
                             "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms to {IP}";
                     }
 
+                    options.GetLevel = (context, _, exception) =>
+                    {
+                        if (context.Request.Path.Value?.Contains("_blazor") ??
+                            false)
+                            return LogEventLevel.Debug;
+
+                        // Implement default behavior
+                        if (context.Response.StatusCode > 499 ||
+                            exception is not null)
+                        {
+                            return LogEventLevel.Error;
+                        }
+
+                        return LogEventLevel.Information;
+                    };
+
                     options.EnrichDiagnosticContext =
                         (diagnosticContext, httpContext) =>
                         {
@@ -140,7 +158,6 @@ namespace Jaydlc.Web
             );
 
             app.UseRouting();
-
 
             app.UseEndpoints(
                 endpoints =>
