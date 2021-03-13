@@ -2,6 +2,11 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
+// ReSharper disable InconsistentNaming
+// ReSharper disable ClassNeverInstantiated.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+#pragma warning disable 1591
+
 namespace Jaydlc.Core.Models
 {
     public record VideoInfo
@@ -96,8 +101,11 @@ namespace Jaydlc.Core.Models
         [JsonPropertyName("_filename")]
         public string FileName { get; init; }
 
-        public DateTime ParsedUploadDate => new(int.Parse(this.UploadDate.Substring(0, 4)),
-            int.Parse(this.UploadDate.Substring(4, 2)), int.Parse(this.UploadDate.Substring(6, 2)));
+        public DateTime ParsedUploadDate => new(
+            int.Parse(this.UploadDate.Substring(0, 4)),
+            int.Parse(this.UploadDate.Substring(4, 2)),
+            int.Parse(this.UploadDate.Substring(6, 2))
+        );
 
         public string JsonFile => $"{this.Title}-{this.Id}.info.json";
     }
