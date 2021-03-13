@@ -1,14 +1,19 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using Jaydlc.Core.Extensions;
 using LibGit2Sharp;
 
-namespace Jaydlc.Core.Models
+namespace Jaydlc.Core
 {
     public class ManagedRepo
     {
         private readonly string _cloneRoot;
-        private string ClonePath => Path.Join(this._cloneRoot, this.GithubRepo!.Name);
+
+        private string ClonePath => Path.Join(
+            this._cloneRoot, this.GithubRepo!.Name
+        );
+
         private Repository? GitRepo { get; set; }
         private Octokit.Repository? GithubRepo { get; set; }
 
@@ -18,6 +23,14 @@ namespace Jaydlc.Core.Models
 
         public bool IsCloned => this.GitRepo is not null;
         public bool HasRemoteInfo => this.GithubRepo is not null;
+        public bool? IsFork => this.GithubRepo?.Fork;
+        public string? Description => this.GithubRepo?.Description;
+
+        public DateTime LastCommit =>
+            GitRepo.Commits.OrderByDescending(x => x.Committer.When)
+                   .First()
+                   .Committer.When.ToLocalTime()
+                   .Date;
 
         public string? ReadMeUrl()
         {
@@ -28,7 +41,8 @@ namespace Jaydlc.Core.Models
                 return null;
             }
 
-            var baseUrl = this.GithubRepo?.HtmlUrl ?? this.GitRepo.RemoteUrl()?.Replace(".git", "");
+            var baseUrl = this.GithubRepo?.HtmlUrl ??
+                          this.GitRepo.RemoteUrl()?.Replace(".git", "");
 
 
             return baseUrl is null ? null : baseUrl + "/blob/master/README.md";
@@ -77,6 +91,11 @@ namespace Jaydlc.Core.Models
             Octokit.Repository repo)
         {
             return new(cloneRoot, repo);
+        }
+
+        public override string ToString()
+        {
+            return this.Name;
         }
     }
 }
