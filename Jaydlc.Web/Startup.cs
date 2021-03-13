@@ -9,8 +9,8 @@ using System.IO;
 using System.Linq;
 using Jaydlc.Core;
 using Jaydlc.Web.GraphQL;
-using Jaydlc.Web.HostedServices;
 using Jaydlc.Web.Utils;
+using Jaydlc.Web.Utils.HostedServices;
 using MatBlazor;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
@@ -64,7 +64,6 @@ namespace Jaydlc.Web
                 )
             );
 
-            services.AddMemoryCache();
 
 #if !DEBUG
             services.AddHostedService<VideoSynchronizer>();
@@ -112,7 +111,7 @@ namespace Jaydlc.Web
                     new ForwardedHeadersOptions()
                     {
                         ForwardedHeaders = ForwardedHeaders.XForwardedFor |
-                                           ForwardedHeaders.XForwardedProto
+                                           ForwardedHeaders.XForwardedProto,
                     }
                 );
             }

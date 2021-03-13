@@ -5,7 +5,7 @@ using Jaydlc.Core;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Jaydlc.Web.HostedServices
+namespace Jaydlc.Web.Utils.HostedServices
 {
     public class VideoSynchronizer : BackgroundService
     {
@@ -29,7 +29,7 @@ namespace Jaydlc.Web.HostedServices
                 );
 
                 await this._videoManager.DownloadPlaylistInfo();
-                await Task.Delay(TimeSpan.FromHours(1.5), stoppingToken);
+                await Task.Delay(Constants.VideoSyncInterval, stoppingToken);
             }
         }
     }
