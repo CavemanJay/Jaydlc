@@ -1,0 +1,50 @@
+﻿// Resource used: https://ops.tips/blog/sending-files-via-grpc/
+syntax = "proto3";
+
+option csharp_namespace = "Jaydlc.Protos";
+
+import "google/protobuf/struct.proto";
+
+package upload;
+
+service Uploader {
+  rpc Upload (stream Chunk) returns (UploadStatus);
+  rpc Status (StatusRequest) returns (StatusResponse);
+}
+
+enum UploadStatusCode{
+  Unknown = 0;
+  Ok = 1;
+  Failed = 2;
+}
+
+enum ServerStatus {
+  HandlingUpload = 0;
+  ReadyForUpload = 1;
+}
+
+message StatusResponse {
+  ServerStatus status = 1;
+}
+
+message StatusRequest {
+}
+
+message NullableString{
+  oneof kind {
+    google.protobuf.NullValue null = 1;
+    string content = 2;
+  }
+}
+
+message Chunk{
+  //  string base64Content = 1;
+  bytes content = 1;
+}
+
+
+message UploadStatus {
+  NullableString fileHash = 1;
+  UploadStatusCode status = 2;
+  int32 bytesReceived = 3;
+}

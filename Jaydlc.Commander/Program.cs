@@ -1,36 +1,38 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Jaydlc.Commander.Client;
 using Jaydlc.Commander.Server;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 namespace Jaydlc.Commander
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             if (args.Length == 0)
             {
-                CreateHostBuilder(args).Build().Run();
+                await CreateHostBuilder(args).Build().RunAsync();
             }
             else
             {
-                new CommanderClient().Run(args[0]);
+                await new CommanderClient().Run(args[0]);
             }
         }
 
         // Additional configuration is required to successfully run gRPC on macOS.
         // For instructions on how to configure Kestrel and gRPC clients on macOS, visit https://go.microsoft.com/fwlink/?linkid=2099682
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
+        private static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(
-                    webBuilder => { webBuilder.UseStartup<Startup>(); }
+                    webBuilder =>
+                    {
+                        webBuilder.UseStartup<Startup>();
+
+                        webBuilder.UseUrls(
+                            "https://0.0.0.0:8081", "http://0.0.0.0:8080"
+                        );
+                    }
                 );
     }
 }

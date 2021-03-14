@@ -2,8 +2,6 @@
 using System.IO;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Tar;
-using SharpCompress.Common;
-using SharpCompress.Writers.Tar;
 
 namespace Jaydlc.Commander.Client
 {
@@ -16,7 +14,7 @@ namespace Jaydlc.Commander.Client
             this._inputFolder = inputFolder;
         }
 
-        public void CompressTo(string destinationFolder)
+        public string CompressTo(string destinationFolder)
         {
             using var archive = TarArchive.Create();
 
@@ -27,6 +25,8 @@ namespace Jaydlc.Commander.Client
 
             archive.AddAllFromDirectory(this._inputFolder!);
             archive.SaveTo(outputFile, CommanderClient.CompressionOptions);
+
+            return outputFile;
         }
     }
 }

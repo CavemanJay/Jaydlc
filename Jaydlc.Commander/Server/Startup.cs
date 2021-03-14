@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Jaydlc.Commander.Services;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -21,18 +22,6 @@ namespace Jaydlc.Commander.Server
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddGrpc();
-
-
-            // var startInfo = new ProcessStartInfo("dotnet", publishArgs)
-            // {
-            //     RedirectStandardError = false,
-            //     RedirectStandardOutput = false
-            // };
-            // var p = new Process() {StartInfo = startInfo};
-            //
-            // p.Start();
-            //
-            // p.WaitForExit();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -48,7 +37,7 @@ namespace Jaydlc.Commander.Server
             app.UseEndpoints(
                 endpoints =>
                 {
-                    endpoints.MapGrpcService<GreeterService>();
+                    endpoints.MapGrpcService<UploadService>();
 
                     endpoints.MapGet(
                         "/",

@@ -5,16 +5,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Protobuf Include="Protos\greet.proto" GrpcServices="Server" />
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="Grpc.AspNetCore" Version="2.34.0" />
         <PackageReference Include="SharpCompress" Version="0.28.1" />
+        <PackageReference Include="ShellProgressBar" Version="5.1.0" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Jaydlc.Core\Jaydlc.Core.csproj" />
+        <ProjectReference Include="..\Jaydlc.Core\Jaydlc.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Protobuf Include="Protos\upload.proto" GrpcServices="Both" />
     </ItemGroup>
 
 </Project>
