@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jaydlc.Web", "Jaydlc.Web\Ja
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jaydlc.Core", "Jaydlc.Core\Jaydlc.Core.csproj", "{94EA01C9-5554-445B-AC3B-18B2226D71AF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jaydlc.Commander", "Jaydlc.Commander\Jaydlc.Commander.csproj", "{F33A7372-E192-488F-B4B0-E02CCB07440A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{94EA01C9-5554-445B-AC3B-18B2226D71AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{94EA01C9-5554-445B-AC3B-18B2226D71AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{94EA01C9-5554-445B-AC3B-18B2226D71AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F33A7372-E192-488F-B4B0-E02CCB07440A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F33A7372-E192-488F-B4B0-E02CCB07440A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F33A7372-E192-488F-B4B0-E02CCB07440A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F33A7372-E192-488F-B4B0-E02CCB07440A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
