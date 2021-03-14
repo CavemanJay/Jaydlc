@@ -9,7 +9,6 @@ package upload;
 
 service Uploader {
   rpc Upload (stream Chunk) returns (UploadStatus);
-  rpc Status (StatusRequest) returns (StatusResponse);
 }
 
 enum UploadStatusCode{
@@ -23,13 +22,6 @@ enum ServerStatus {
   ReadyForUpload = 1;
 }
 
-message StatusResponse {
-  ServerStatus status = 1;
-}
-
-message StatusRequest {
-}
-
 message NullableString{
   oneof kind {
     google.protobuf.NullValue null = 1;
@@ -41,9 +33,8 @@ message Chunk{
   bytes content = 1;
 }
 
-
 message UploadStatus {
   NullableString fileHash = 1;
   UploadStatusCode status = 2;
-  int32 bytesReceived = 3;
+  NullableString errorMessage = 3;
 }

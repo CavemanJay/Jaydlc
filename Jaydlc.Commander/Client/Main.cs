@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Grpc.Core;
@@ -121,9 +123,18 @@ namespace Jaydlc.Commander.Client
             // Open the file stream of the archive
             await using var stream = File.OpenRead(newArchivePath);
 
+
             // Create a progress bar
+            var progressOptions = new ProgressBarOptions()
+            {
+                ProgressCharacter = '─',
+                ProgressBarOnBottom = true,
+                ForegroundColor = ConsoleColor.Green,
+                ForegroundColorDone = ConsoleColor.Gray,
+            };
+            Console.WriteLine("\n");
             using (var progressBar = new ProgressBar(
-                100, "Uploading archive", ConsoleColor.White
+                100, "Upload progress", progressOptions
             ))
             {
                 // Use a progress reporter to allow us to report percentages
@@ -131,7 +142,9 @@ namespace Jaydlc.Commander.Client
 
                 // https://stackoverflow.com/a/2030971
                 // Upload the archive in increments so as to not load the whole archive into memory
-                var buffer = new byte[2048];
+
+                const int bufferSize = 1000000; // One MB
+                var buffer = new byte[bufferSize];
                 var bytesRead = 1;
                 var totalBytesRead = 0;
                 var streamLength = stream.Length;
@@ -141,7 +154,7 @@ namespace Jaydlc.Commander.Client
                     totalBytesRead += bytesRead;
 
                     // Cut off unused data once we are at the end of the file
-                    if (bytesRead < 2048)
+                    if (bytesRead < bufferSize)
                     {
                         buffer = buffer.Take(bytesRead).ToArray();
                     }
@@ -168,9 +181,9 @@ namespace Jaydlc.Commander.Client
 
             if (response.Status != UploadStatusCode.Ok)
             {
-                // TODO: Replace with actual error message
                 Console.WriteLine(
-                    "Upload unsuccessful, server responsed: " + "Error message"
+                    "Upload unsuccessful, server responded: " +
+                    response.ErrorMessage.Content
                 );
                 return;
             }
@@ -186,9 +199,29 @@ namespace Jaydlc.Commander.Client
             Console.WriteLine("Archive successfully uploaded!");
         }
 
-        public async Task Run(string serviceUrl)
+        private async Task TestSiteStatus(string siteUrl)
         {
-            using var channel = GrpcChannel.ForAddress(serviceUrl);
+            using var client = new HttpClient {BaseAddress = new Uri(siteUrl)};
+
+            Console.WriteLine("Testing website status");
+
+            using var response = await client.GetAsync(
+                "/", HttpCompletionOption.ResponseHeadersRead
+            );
+
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                Console.WriteLine("Website is up and running!");
+            }
+        }
+
+        public async Task Run(string host, int port, bool tls)
+        {
+            var protocol = tls ? "https" : "http";
+            var overlordPort = tls ? 8081 : 8080;
+            var overlordUrl = $"{protocol}://{host}:{overlordPort}";
+
+            using var channel = GrpcChannel.ForAddress(overlordUrl);
 
             string newArchivePath;
             string archiveHash;
@@ -200,10 +233,10 @@ namespace Jaydlc.Commander.Client
             using (new Section("Creating Tar Archive"))
             {
                 (newArchivePath, archiveHash) = this.CreateArchive();
-                Console.WriteLine("Archive written to" + newArchivePath);
+                Console.WriteLine("Archive written to " + newArchivePath);
             }
 
-            using (new Section("Uploading File"))
+            using (new Section("Uploading Archive to Overlord"))
             {
                 await this.UploadArchive(channel, newArchivePath, archiveHash);
             }
@@ -220,6 +253,14 @@ namespace Jaydlc.Commander.Client
                 {
                     Console.WriteLine("Server: " + updateResponse.Message);
                 }
+            }
+
+            using (new Section("Post Update Checks"))
+            {
+                var siteUrl = $"{protocol}://{host}:{port}";
+                Console.WriteLine("Waiting for site initialization...");
+                await Task.Delay(5000);
+                await this.TestSiteStatus(siteUrl);
             }
         }
     }

@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Jaydlc.Commander.Shared;
 using Jaydlc.Protos;
@@ -24,22 +24,24 @@ namespace Jaydlc.Commander.Server.Services
         public override async Task<UploadStatus> Upload(
             IAsyncStreamReader<Chunk> requestStream, ServerCallContext context)
         {
-            // TODO: This is still loading the entire archive into memory
-            var data = new List<byte>();
-
-            await foreach (var request in requestStream.ReadAllAsync())
-            {
-                var content = request.Content;
-                var bytes = content.ToByteArray();
-                data.AddRange(bytes);
-            }
-
-            var finishedData = data.ToArray();
-
             var fileName = Path.Join(this._uploadPath, "archive.tar.gz");
-            File.Delete(fileName);
 
-            await File.WriteAllBytesAsync(fileName, finishedData);
+            try
+            {
+                await this.HandleIncomingData(requestStream, fileName);
+            }
+            catch (Exception ex)
+            {
+                // TODO: Logging
+
+                return new UploadStatus()
+                {
+                    Status = UploadStatusCode.Failed,
+                    FileHash =
+                        new NullableString() {Null = NullValue.NullValue},
+                    ErrorMessage = new NullableString() {Content = ex.Message},
+                };
+            }
 
             return new UploadStatus
             {
@@ -49,13 +51,18 @@ namespace Jaydlc.Commander.Server.Services
             };
         }
 
-        public override Task<StatusResponse> Status(StatusRequest request,
-            ServerCallContext context)
+        private async Task HandleIncomingData(
+            IAsyncStreamReader<Chunk> requestStream, string fileName)
         {
-            // return Task.FromResult(
-            //     new StatusResponse() {Status = ServerStatus.ReadyForUpload}
-            // );
-            throw new NotImplementedException();
+            File.Delete(fileName);
+            await using var stream = File.OpenWrite(fileName);
+
+            await foreach (var request in requestStream.ReadAllAsync())
+            {
+                var content = request.Content;
+                var bytes = content.ToByteArray();
+                stream.Write(bytes);
+            }
         }
     }
 }

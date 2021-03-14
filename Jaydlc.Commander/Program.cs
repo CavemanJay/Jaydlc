@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Jaydlc.Commander.Client;
 using Jaydlc.Commander.Server;
@@ -16,7 +17,10 @@ namespace Jaydlc.Commander
             }
             else
             {
-                await new CommanderClient().Run(args[0]);
+                // Arguments should be host, port, tls
+                await new CommanderClient().Run(
+                    args[0], int.Parse(args[1]), bool.Parse(args[2])
+                );
             }
         }
 

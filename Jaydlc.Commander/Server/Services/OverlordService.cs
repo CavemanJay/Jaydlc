@@ -61,5 +61,20 @@ namespace Jaydlc.Commander.Server.Services
             await SendMessage("Starting website");
             this._siteManager.StartSite(this._sitePath);
         }
+
+        public override Task<StartSiteResponse> StartWebsite(
+            StartSiteRequest request, ServerCallContext context)
+        {
+            this._siteManager.StartSite(this._sitePath);
+
+            return Task.FromResult(new StartSiteResponse());
+        }
+
+        public override Task<KillSiteResponse> KillWebsite(
+            KillSiteRequest request, ServerCallContext context)
+        {
+            this._siteManager.StopSite();
+            return Task.FromResult(new KillSiteResponse());
+        }
     }
 }
