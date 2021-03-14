@@ -3,6 +3,10 @@ using System.Linq;
 
 namespace Jaydlc.Commander.Client
 {
+    /// <summary>
+    /// Helper class to divide operations into sections.
+    /// Writes the header on instantiation and writes the footer when disposed
+    /// </summary>
     public class Section : IDisposable
     {
         private readonly string _sectionName;

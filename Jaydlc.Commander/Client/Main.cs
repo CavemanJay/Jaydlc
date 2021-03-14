@@ -18,13 +18,20 @@ namespace Jaydlc.Commander.Client
 {
     public class CommanderClient
     {
+        /// <summary>
+        /// The options to pass to the dotnet executable
+        /// </summary>
         private readonly DotnetOptions _options;
 
+        /// <summary>
+        /// Use the tar.gz format
+        /// </summary>
         public static readonly WriterOptions CompressionOptions =
             new TarWriterOptions(CompressionType.GZip, true);
 
         public CommanderClient()
         {
+            // Initialize the configuration so we can use appsettings.json as a client
             var configuration = new ConfigurationBuilder()
                                 .SetBasePath(Directory.GetCurrentDirectory())
                                 .AddJsonFile(
@@ -51,12 +58,17 @@ namespace Jaydlc.Commander.Client
                                                "$PublishPath", publishPath
                                            );
 
+            // Read in the dotnet options
             this._options = new DotnetOptions(
                 websiteProjectPath, publishPath, publishArgs
             );
         }
 
-        private void CompileWebsite()
+        /// <summary>
+        /// Publishes the website using the dotnet executable.
+        /// Publish options are specified in appsettings.json
+        /// </summary>
+        private void PublishWebsite()
         {
             var startInfo = new ProcessStartInfo(
                 "dotnet", this._options.PublishArgs
@@ -72,6 +84,10 @@ namespace Jaydlc.Commander.Client
             p.WaitForExit();
         }
 
+        /// <summary>
+        /// Uses the SharpCompress library to create a tar.gz archive of the published website
+        /// </summary>
+        /// <returns></returns>
         private (string newArchivePath, string archiveHash) CreateArchive()
         {
             var compressor = new Compressor(this._options.PublishPath);
@@ -85,23 +101,35 @@ namespace Jaydlc.Commander.Client
             return (newArchivePath, archiveHash);
         }
 
-        private async Task UploadArchive(string newArchivePath,
-            string archiveHash)
+        /// <summary>
+        /// Uploads the website archive to the command server
+        /// </summary>
+        /// <param name="serviceUrl">The url of the command server (http://localhost:8080)</param>
+        /// <param name="newArchivePath">The path of the archive to upload</param>
+        /// <param name="archiveHash">The hash of the local copy of the archive</param>
+        private async Task UploadArchive(string serviceUrl,
+            string newArchivePath, string archiveHash)
         {
-            var channel = GrpcChannel.ForAddress("http://localhost:8080");
+            // Instantiate the grpc client
+            var channel = GrpcChannel.ForAddress(serviceUrl);
             var client = new Uploader.UploaderClient(channel);
 
+            // Begin the grpc call 
             using var call = client.Upload();
 
+            // Open the file stream of the archive
             await using var stream = File.OpenRead(newArchivePath);
 
+            // Create a progress bar
             using (var progressBar = new ProgressBar(
                 100, "Uploading archive", ConsoleColor.White
             ))
             {
+                // Use a progress reporter to allow us to report percentages
                 var progressReporter = progressBar.AsProgress<double>();
 
                 // https://stackoverflow.com/a/2030971
+                // Upload the archive in increments so as to not load the whole archive into memory
                 var buffer = new byte[2048];
                 var bytesRead = 1;
                 var totalBytesRead = 0;
@@ -111,14 +139,17 @@ namespace Jaydlc.Commander.Client
                     bytesRead = stream.Read(buffer, 0, buffer.Length);
                     totalBytesRead += bytesRead;
 
+                    // Cut off unused data once we are at the end of the file
                     if (bytesRead < 2048)
                     {
                         buffer = buffer.Take(bytesRead).ToArray();
                     }
 
+                    // Show progress to the user
                     var progress = (double) totalBytesRead / streamLength;
                     progressReporter.Report(progress);
 
+                    // Send the bytes to the server
                     await call.RequestStream.WriteAsync(
                         new Chunk()
                         {
@@ -127,9 +158,11 @@ namespace Jaydlc.Commander.Client
                     );
                 }
 
+                // End the rpc call
                 await call.RequestStream.CompleteAsync();
             }
 
+            // Get the result of the upload
             var response = await call;
 
             if (response.Status != UploadStatusCode.Ok)
@@ -152,13 +185,13 @@ namespace Jaydlc.Commander.Client
             Console.WriteLine("Archive successfully uploaded!");
         }
 
-        public async Task Run(string host)
+        public async Task Run(string serviceUrl)
         {
             string newArchivePath;
             string archiveHash;
             using (new Section("Compiling Website"))
             {
-                this.CompileWebsite();
+                this.PublishWebsite();
             }
 
             using (new Section("Creating Tar Archive"))
@@ -168,7 +201,9 @@ namespace Jaydlc.Commander.Client
 
             using (new Section("Uploading File"))
             {
-                await this.UploadArchive(newArchivePath, archiveHash);
+                await this.UploadArchive(
+                    serviceUrl, newArchivePath, archiveHash
+                );
             }
         }
     }
