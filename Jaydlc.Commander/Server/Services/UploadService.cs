@@ -6,7 +6,7 @@ using Grpc.Core;
 using Jaydlc.Core;
 using Jaydlc.Protos;
 
-namespace Jaydlc.Commander.Services
+namespace Jaydlc.Commander.Server.Services
 {
     public class UploadService : Uploader.UploaderBase
     {
