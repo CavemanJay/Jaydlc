@@ -1,10 +1,9 @@
 ﻿@page "/Repos"
-@using Jaydlc.Core.Models
 @using Jaydlc.Web.Utils.Extensions
 @using Jaydlc.Core
-@using Jaydlc.Web.Utils
 @using Microsoft.Extensions.Caching.Memory
 @using Microsoft.Extensions.Logging
+@using Constants = Jaydlc.Web.Utils.Constants
 @inject IMemoryCache cache
 @inject GithubRepoManager RepoManager
 @inject ILogger<Repos> Logger

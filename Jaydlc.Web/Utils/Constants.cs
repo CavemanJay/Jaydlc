@@ -14,9 +14,5 @@ namespace Jaydlc.Web.Utils
         public static TimeSpan VideoSyncInterval =>
             TimeSpan.FromHours(8);
 
-        public static string TempFolder =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                ? Environment.ExpandEnvironmentVariables("%TEMP%")
-                : "/tmp";
     }
 }

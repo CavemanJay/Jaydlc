@@ -15,6 +15,7 @@ using MatBlazor;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using Serilog.Events;
+using Constants = Jaydlc.Core.Constants;
 
 namespace Jaydlc.Web
 {
