@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Google.Protobuf;
+using Grpc.Core;
 using Grpc.Net.Client;
 using Jaydlc.Commander.Models;
+using Jaydlc.Commander.Shared;
 using Jaydlc.Core;
 using Jaydlc.Protos;
 using Microsoft.Extensions.Configuration;
@@ -104,14 +106,13 @@ namespace Jaydlc.Commander.Client
         /// <summary>
         /// Uploads the website archive to the command server
         /// </summary>
-        /// <param name="serviceUrl">The url of the command server (http://localhost:8080)</param>
+        /// <param name="channel">The url of the command server (http://localhost:8080)</param>
         /// <param name="newArchivePath">The path of the archive to upload</param>
         /// <param name="archiveHash">The hash of the local copy of the archive</param>
-        private async Task UploadArchive(string serviceUrl,
+        private async Task UploadArchive(ChannelBase channel,
             string newArchivePath, string archiveHash)
         {
             // Instantiate the grpc client
-            var channel = GrpcChannel.ForAddress(serviceUrl);
             var client = new Uploader.UploaderClient(channel);
 
             // Begin the grpc call 
@@ -187,6 +188,8 @@ namespace Jaydlc.Commander.Client
 
         public async Task Run(string serviceUrl)
         {
+            using var channel = GrpcChannel.ForAddress(serviceUrl);
+
             string newArchivePath;
             string archiveHash;
             using (new Section("Compiling Website"))
@@ -197,13 +200,26 @@ namespace Jaydlc.Commander.Client
             using (new Section("Creating Tar Archive"))
             {
                 (newArchivePath, archiveHash) = this.CreateArchive();
+                Console.WriteLine("Archive written to" + newArchivePath);
             }
 
             using (new Section("Uploading File"))
             {
-                await this.UploadArchive(
-                    serviceUrl, newArchivePath, archiveHash
+                await this.UploadArchive(channel, newArchivePath, archiveHash);
+            }
+
+            using (new Section("Updating Website"))
+            {
+                var client = new Overlord.OverlordClient(channel);
+                using var call = client.UpdateWebsite(
+                    new UpdateRequest() {DeleteFilesAfterBackup = true}
                 );
+
+                await foreach (var updateResponse in call.ResponseStream
+                    .ReadAllAsync())
+                {
+                    Console.WriteLine("Server: " + updateResponse.Message);
+                }
             }
         }
     }

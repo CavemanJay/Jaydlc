@@ -3,13 +3,24 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Grpc.Core;
-using Jaydlc.Core;
+using Jaydlc.Commander.Shared;
 using Jaydlc.Protos;
+using Microsoft.Extensions.Configuration;
 
 namespace Jaydlc.Commander.Server.Services
 {
     public class UploadService : Uploader.UploaderBase
     {
+        private readonly string _uploadPath;
+
+        public UploadService(IConfiguration configuration)
+        {
+            this._uploadPath = configuration.GetValue<string?>("UploadPath") ??
+                               throw new Exception(
+                                   "UploadPath configuration cannot be null"
+                               );
+        }
+
         public override async Task<UploadStatus> Upload(
             IAsyncStreamReader<Chunk> requestStream, ServerCallContext context)
         {
@@ -25,7 +36,7 @@ namespace Jaydlc.Commander.Server.Services
 
             var finishedData = data.ToArray();
 
-            var fileName = Path.Join(Constants.TempFolder, "archive.tar.gz");
+            var fileName = Path.Join(this._uploadPath, "archive.tar.gz");
             File.Delete(fileName);
 
             await File.WriteAllBytesAsync(fileName, finishedData);

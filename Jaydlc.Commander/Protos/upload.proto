@@ -38,7 +38,6 @@ message NullableString{
 }
 
 message Chunk{
-  //  string base64Content = 1;
   bytes content = 1;
 }
 

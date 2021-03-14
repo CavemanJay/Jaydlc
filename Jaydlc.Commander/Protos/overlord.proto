@@ -1,0 +1,26 @@
+﻿// Resource used: https://ops.tips/blog/sending-files-via-grpc/
+syntax = "proto3";
+
+option csharp_namespace = "Jaydlc.Protos";
+
+package overlord;
+
+service Overlord {
+  //  rpc KillWebsite (KillSiteRequest) returns (KillSiteResponse);
+  //  rpc StartWebsite (StartSiteRequest) returns (KillSiteResponse);
+  rpc UpdateWebsite(UpdateRequest) returns (stream UpdateResponse);
+}
+
+//message KillSiteRequest{}
+//message KillSiteResponse{}
+//
+//message StartSiteRequest{}
+//message StartSiteResponse{}
+
+message UpdateRequest{
+  bool deleteFilesAfterBackup = 1;
+}
+
+message UpdateResponse{
+  string message = 1;
+}

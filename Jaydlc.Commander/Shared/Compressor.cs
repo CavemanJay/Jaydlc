@@ -1,9 +1,9 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
+using Jaydlc.Commander.Client;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Tar;
 
-namespace Jaydlc.Commander.Client
+namespace Jaydlc.Commander.Shared
 {
     public class Compressor
     {
@@ -14,14 +14,16 @@ namespace Jaydlc.Commander.Client
             this._inputFolder = inputFolder;
         }
 
-        public string CompressTo(string destinationFolder)
+        public string CompressTo(string destination)
         {
             using var archive = TarArchive.Create();
+            const string? fileExtension = ".tar.gz";
 
             var baseName = Path.GetFileName(this._inputFolder);
-            var outputFile = Path.Join(destinationFolder, baseName + ".tar.gz");
 
-            Console.WriteLine("Writing archive to " + outputFile);
+            string outputFile = !destination.Contains(fileExtension)
+                ? Path.Join(destination, baseName + fileExtension)
+                : destination;
 
             archive.AddAllFromDirectory(this._inputFolder!);
             archive.SaveTo(outputFile, CommanderClient.CompressionOptions);
