@@ -27,7 +27,8 @@ namespace Jaydlc.Commander.Server
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
+            SiteManager siteManager)
         {
             if (env.IsDevelopment())
             {
@@ -52,6 +53,10 @@ namespace Jaydlc.Commander.Server
                         }
                     );
                 }
+            );
+
+            siteManager.StartSite(
+                this._configuration.GetValue<string>("ArchiveExtractionPath")
             );
         }
     }
