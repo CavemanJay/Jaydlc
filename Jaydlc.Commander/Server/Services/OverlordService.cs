@@ -13,7 +13,7 @@ namespace Jaydlc.Commander.Server.Services
         private readonly string _uploadPath;
         private readonly string _backupsPath;
         private readonly string _sitePath;
-
+        private readonly string _authToken;
         private const string SiteUrl = "http://localhost:5000";
 
         public OverlordService(SiteManager siteManager,
@@ -24,6 +24,7 @@ namespace Jaydlc.Commander.Server.Services
             this._backupsPath = configuration.GetValue<string>("BackupsPath");
             this._sitePath =
                 configuration.GetValue<string>("ArchiveExtractionPath");
+            this._authToken = configuration.GetValue<string>("AuthToken");
         }
 
         public override async Task UpdateWebsite(UpdateRequest request,
@@ -77,6 +78,27 @@ namespace Jaydlc.Commander.Server.Services
         {
             await this._siteManager.StopSite(SiteUrl);
             return new KillSiteResponse();
+        }
+
+        public override Task<VerifyResponse> Verify(VerifyRequest request,
+            ServerCallContext context)
+        {
+            var verified = new VerifyResponse() {Verified = true};
+            var unauthorized = new VerifyResponse() {Verified = false};
+
+            var authTokenHeader =
+                context.RequestHeaders.GetValue("authorization");
+
+            if (authTokenHeader is null)
+            {
+                return Task.FromResult(unauthorized);
+            }
+
+            var authToken = authTokenHeader.Split(" ")[1];
+
+            return Task.FromResult(
+                authToken == this._authToken ? verified : unauthorized
+            );
         }
     }
 }

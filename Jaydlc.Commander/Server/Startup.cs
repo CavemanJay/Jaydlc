@@ -1,4 +1,6 @@
-﻿using Jaydlc.Commander.Server.Services;
+﻿using System;
+using System.Threading.Tasks;
+using Jaydlc.Commander.Server.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -37,6 +39,8 @@ namespace Jaydlc.Commander.Server
 
             app.UseRouting();
 
+            app.Use(this.HellaBasicAuthMiddleware);
+
             app.UseEndpoints(
                 endpoints =>
                 {
@@ -54,7 +58,38 @@ namespace Jaydlc.Commander.Server
                     );
                 }
             );
+        }
 
+        private async Task HellaBasicAuthMiddleware(HttpContext context, Func<Task> next)
+        {
+            var authorizationTokenHeader =
+                context.Request.Headers["Authorization"];
+
+            var lacksAuthToken = authorizationTokenHeader.Count != 1;
+
+            var tokenMatches = new Lazy<bool>(
+                () =>
+                {
+                    var authToken = authorizationTokenHeader[0].Split(" ")[1];
+
+                    return authToken ==
+                           this._configuration.GetValue<string>("AuthToken");
+                }
+            );
+
+            var attemptingToVerify =
+                context.Request.Path.Value?.Contains("Verify") ?? false;
+
+            if (!attemptingToVerify && (lacksAuthToken || !tokenMatches.Value))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+
+                await context.Response.CompleteAsync();
+                return;
+            }
+
+
+            await next.Invoke();
         }
     }
 }

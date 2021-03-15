@@ -9,17 +9,18 @@ namespace Jaydlc.Commander
 {
     public class Program
     {
-        public static async Task Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
             if (args.Length == 0)
             {
                 await CreateHostBuilder(args).Build().RunAsync();
+                return 0;
             }
             else
             {
                 // Arguments should be host, port, tls
-                await new CommanderClient().Run(
-                    args[0], int.Parse(args[1]), bool.Parse(args[2])
+                return await new CommanderClient().Run(
+                    args[0], int.Parse(args[1]), bool.Parse(args[2]), args[3]
                 );
             }
         }

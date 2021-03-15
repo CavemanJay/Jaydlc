@@ -27,6 +27,8 @@ namespace Jaydlc.Commander.Client
         /// </summary>
         private readonly DotnetOptions _options;
 
+        private Metadata _headers;
+
         /// <summary>
         /// Use the tar.gz format
         /// </summary>
@@ -118,7 +120,7 @@ namespace Jaydlc.Commander.Client
             var client = new Uploader.UploaderClient(channel);
 
             // Begin the grpc call 
-            using var call = client.Upload();
+            using var call = client.Upload(this._headers);
 
             // Open the file stream of the archive
             await using var stream = File.OpenRead(newArchivePath);
@@ -143,7 +145,7 @@ namespace Jaydlc.Commander.Client
                 // https://stackoverflow.com/a/2030971
                 // Upload the archive in increments so as to not load the whole archive into memory
 
-                const int bufferSize = 1000000; // One MB
+                const int bufferSize = 1_000_000; // One MB
                 var buffer = new byte[bufferSize];
                 var bytesRead = 1;
                 var totalBytesRead = 0;
@@ -215,13 +217,33 @@ namespace Jaydlc.Commander.Client
             }
         }
 
-        public async Task Run(string host, int port, bool tls)
+        public async Task<int> Run(string host, int port, bool tls,
+            string token)
         {
             var protocol = tls ? "https" : "http";
             var overlordPort = tls ? 8081 : 8080;
+            var sitePort = tls ? 5001 : 5000;
             var overlordUrl = $"{protocol}://{host}:{overlordPort}";
+            this._headers = new Metadata {{"Authorization", $"Bearer {token}"}};
 
             using var channel = GrpcChannel.ForAddress(overlordUrl);
+            var client = new Overlord.OverlordClient(channel);
+
+            using (new Section("Verifying Connection to Server"))
+            {
+                var response = await client.VerifyAsync(
+                    new VerifyRequest(), this._headers
+                );
+                var verified = response.Verified;
+
+                if (!verified)
+                {
+                    Console.WriteLine(
+                        "Incorrect authorization token. Unable to continue."
+                    );
+                    return 1;
+                }
+            }
 
             string newArchivePath;
             string archiveHash;
@@ -243,9 +265,9 @@ namespace Jaydlc.Commander.Client
 
             using (new Section("Updating Website"))
             {
-                var client = new Overlord.OverlordClient(channel);
                 using var call = client.UpdateWebsite(
-                    new UpdateRequest() {DeleteFilesAfterBackup = true}
+                    new UpdateRequest() {DeleteFilesAfterBackup = true},
+                    this._headers
                 );
 
                 await foreach (var updateResponse in call.ResponseStream
@@ -257,11 +279,13 @@ namespace Jaydlc.Commander.Client
 
             using (new Section("Post Update Checks"))
             {
-                var siteUrl = $"{protocol}://{host}:{port}";
+                var siteUrl = $"{protocol}://{host}:{sitePort}";
                 Console.WriteLine("Waiting for site initialization...");
                 await Task.Delay(5000);
                 await this.TestSiteStatus(siteUrl);
             }
+
+            return 0;
         }
     }
 }
