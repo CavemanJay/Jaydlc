@@ -7,11 +7,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Jaydlc.Core;
 using Jaydlc.Web.GraphQL;
 using Jaydlc.Web.Utils;
 using Jaydlc.Web.Utils.HostedServices;
 using MatBlazor;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using Serilog.Events;
@@ -168,8 +170,36 @@ namespace Jaydlc.Web
                     endpoints.MapGraphQL();
 
                     endpoints.HandleWebhooks(this.GitHubProjectHandlers);
+
+                    endpoints.MapPost("/shutdown", this.ShutdownRequested);
                 }
             );
+        }
+
+        private Task ShutdownRequested(HttpContext context)
+        {
+            var logger = context.RequestServices.GetService<ILogger>();
+            var remoteIp = context.Connection.RemoteIpAddress?.ToString();
+            logger?.Warning("Shutdown requested by {@IP}", remoteIp);
+
+            var allowedRequesters = new[] {"::1", "localhost", "127.0.0.1"};
+
+            // If the remote IP is not in the list of allowed IPs that can shutdown this site 
+            if (!allowedRequesters.Contains(remoteIp))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.WriteAsync("Uhhhh no...");
+
+                return Task.CompletedTask;
+            }
+
+            var appLifetime = context.RequestServices
+                                     .GetRequiredService<
+                                         IHostApplicationLifetime>();
+
+            context.Response.StatusCode = StatusCodes.Status200OK;
+            appLifetime.StopApplication();
+            return Task.CompletedTask;
         }
     }
 }
