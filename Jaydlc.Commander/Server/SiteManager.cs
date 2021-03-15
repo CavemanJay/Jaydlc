@@ -1,6 +1,10 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Jaydlc.Commander.Shared;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -10,9 +14,25 @@ namespace Jaydlc.Commander.Server
     public class SiteManager
     {
         private Process? SiteProcess { get; set; }
+        private CancellationTokenSource _tokenSource;
+
+        public bool SiteShouldBeRunning =>
+            !this._tokenSource.IsCancellationRequested;
+
+        public bool SiteRunning => !this.SiteProcess?.HasExited ?? false;
+
+        public SiteManager()
+        {
+            this._tokenSource = new CancellationTokenSource();
+        }
 
         public void StartSite(string publishedSitePath)
         {
+            if (this.SiteProcess is not null && !this.SiteProcess.HasExited)
+                throw new Exception(
+                    "An existing site process is already running"
+                );
+
             var filePath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                 ? "Jaydlc.Web.exe"
                 : "Jaydlc.Web";
@@ -22,6 +42,8 @@ namespace Jaydlc.Commander.Server
                 {WorkingDirectory = publishedSitePath};
 
             this.SiteProcess = Process.Start(startInfo);
+
+            this._tokenSource = new CancellationTokenSource();
         }
 
         public void BackupExistingSite(string sitePath, string archivePath)
@@ -66,9 +88,19 @@ namespace Jaydlc.Commander.Server
             }
         }
 
-        public void StopSite()
+        public async Task StopSite(string siteUrl)
         {
-            this.SiteProcess?.Kill(true);
+            if (this.SiteProcess is null)
+                return;
+
+            using var client = new HttpClient();
+            await client.PostAsync(
+                siteUrl + "/shutdown", new StringContent("")
+            );
+
+            this._tokenSource.Cancel();
+            await this.SiteProcess.WaitForExitAsync();
+
             this.SiteProcess = null;
         }
     }

@@ -22,7 +22,7 @@ namespace Jaydlc.Commander.Server
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<SiteManager>();
-
+            services.AddHostedService<SiteManagerService>();
             services.AddGrpc();
         }
 
@@ -55,9 +55,6 @@ namespace Jaydlc.Commander.Server
                 }
             );
 
-            siteManager.StartSite(
-                this._configuration.GetValue<string>("ArchiveExtractionPath")
-            );
         }
     }
 }

@@ -14,6 +14,8 @@ namespace Jaydlc.Commander.Server.Services
         private readonly string _backupsPath;
         private readonly string _sitePath;
 
+        private const string SiteUrl = "http://localhost:5000";
+
         public OverlordService(SiteManager siteManager,
             IConfiguration configuration)
         {
@@ -36,7 +38,7 @@ namespace Jaydlc.Commander.Server.Services
             }
 
             await SendMessage("Stopping website");
-            this._siteManager.StopSite();
+            await this._siteManager.StopSite(SiteUrl);
 
             var datePrefix = DateTime.Now.ToString("MM_dd_yyyy__hh_mm_tt");
 
@@ -70,11 +72,11 @@ namespace Jaydlc.Commander.Server.Services
             return Task.FromResult(new StartSiteResponse());
         }
 
-        public override Task<KillSiteResponse> KillWebsite(
+        public override async Task<KillSiteResponse> KillWebsite(
             KillSiteRequest request, ServerCallContext context)
         {
-            this._siteManager.StopSite();
-            return Task.FromResult(new KillSiteResponse());
+            await this._siteManager.StopSite(SiteUrl);
+            return new KillSiteResponse();
         }
     }
 }
