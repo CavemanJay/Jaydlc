@@ -4,6 +4,8 @@ using Jaydlc.Commander.Client;
 using Jaydlc.Commander.Server;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using Serilog;
+using Serilog.Exceptions;
 
 namespace Jaydlc.Commander
 {
@@ -29,6 +31,7 @@ namespace Jaydlc.Commander
         // For instructions on how to configure Kestrel and gRPC clients on macOS, visit https://go.microsoft.com/fwlink/?linkid=2099682
         private static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
+                .UseSerilog(ConfigureLogger)
                 .ConfigureWebHostDefaults(
                     webBuilder =>
                     {
@@ -39,5 +42,12 @@ namespace Jaydlc.Commander
                         );
                     }
                 );
+
+        private static void ConfigureLogger(HostBuilderContext context,
+            IServiceProvider serviceProvider,
+            LoggerConfiguration loggerConfiguration)
+        {
+            loggerConfiguration.Enrich.WithExceptionDetails().WriteTo.Console();
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -6,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Jaydlc.Commander.Shared;
+using Serilog;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 
@@ -13,6 +15,7 @@ namespace Jaydlc.Commander.Server
 {
     public class SiteManager
     {
+        private readonly ILogger _logger;
         private Process? SiteProcess { get; set; }
         private CancellationTokenSource _tokenSource;
 
@@ -21,8 +24,9 @@ namespace Jaydlc.Commander.Server
 
         public bool SiteRunning => !this.SiteProcess?.HasExited ?? false;
 
-        public SiteManager()
+        public SiteManager(ILogger logger)
         {
+            this._logger = logger;
             this._tokenSource = new CancellationTokenSource();
         }
 
@@ -41,9 +45,16 @@ namespace Jaydlc.Commander.Server
             var startInfo = new ProcessStartInfo(path)
                 {WorkingDirectory = publishedSitePath};
 
-            this.SiteProcess = Process.Start(startInfo);
+            try
+            {
+                this.SiteProcess = Process.Start(startInfo);
 
-            this._tokenSource = new CancellationTokenSource();
+                this._tokenSource = new CancellationTokenSource();
+            }
+            catch (Win32Exception ex) when (ex.Message.Contains("No such file"))
+            {
+                this._logger.Error(ex, "Unable to start website");
+            }
         }
 
         public void BackupExistingSite(string sitePath, string archivePath)
